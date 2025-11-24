@@ -10,13 +10,10 @@ Contains the four agents:
 
 import random
 import time
-from typing import List, Optional
-import sys
 import os
+from typing import List, Optional
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Junction
+from ..route_fetcher.models import Junction
 from .models import AgentResult, AgentType, JudgeDecision
 from .base_agent import BaseAgent
 

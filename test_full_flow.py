@@ -10,12 +10,8 @@ Tests the complete data flow:
 """
 
 import sys
-import os
 import time
 from datetime import datetime
-
-# Ensure all modules are importable
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 print("=" * 70)
 print("TOUR GUIDE - FULL SYSTEM INTEGRATION TEST")
@@ -53,7 +49,7 @@ def test(name, func):
 
 def test_route_fetcher():
     """Test route_fetcher models and data structures."""
-    from route_fetcher.models import Route, Junction, Coordinates, TurnDirection
+    from tour_guide.route_fetcher.models import Route, Junction, Coordinates, TurnDirection
 
     # Create mock junction
     junction = Junction(
@@ -110,9 +106,9 @@ test("Route Fetcher - Models", test_route_fetcher)
 
 def test_junction_orchestrator():
     """Test junction_orchestrator tempo control."""
-    from route_fetcher.models import Route, Junction, Coordinates, TurnDirection
-    from junction_orchestrator import JunctionOrchestrator, JunctionEvent
-    from junction_orchestrator.models import OrchestratorState
+    from tour_guide.route_fetcher.models import Route, Junction, Coordinates, TurnDirection
+    from tour_guide.junction_orchestrator import JunctionOrchestrator, JunctionEvent
+    from tour_guide.junction_orchestrator.models import OrchestratorState
 
     # Create mock route with 3 junctions
     junctions = []
@@ -175,9 +171,9 @@ test("Junction Orchestrator - Tempo Control", test_junction_orchestrator)
 
 def test_agent_orchestrator():
     """Test agent_orchestrator threading and queue."""
-    from route_fetcher.models import Route, Junction, Coordinates, TurnDirection
-    from agent_orchestrator import AgentOrchestrator, JunctionResults
-    from agent_orchestrator.models import AgentType
+    from tour_guide.route_fetcher.models import Route, Junction, Coordinates, TurnDirection
+    from tour_guide.agent_orchestrator import AgentOrchestrator, JunctionResults
+    from tour_guide.agent_orchestrator.models import AgentType
 
     # Create mock route
     junctions = []
@@ -248,7 +244,7 @@ test("Agent Orchestrator - Threading & Queue", test_agent_orchestrator)
 
 def test_user_api():
     """Test user_api result formatting."""
-    from user_api.tour_guide_api import TourGuideAPI, TourGuideResult, JunctionWinner
+    from tour_guide.user_api.tour_guide_api import TourGuideAPI, TourGuideResult, JunctionWinner
 
     # Create mock result
     winners = [
@@ -315,9 +311,9 @@ test("User API - Result Formatting", test_user_api)
 
 def test_end_to_end():
     """Test complete system flow from route to final report."""
-    from route_fetcher.models import Route, Junction, Coordinates, TurnDirection
-    from agent_orchestrator import AgentOrchestrator
-    from user_api.tour_guide_api import TourGuideResult, JunctionWinner
+    from tour_guide.route_fetcher.models import Route, Junction, Coordinates, TurnDirection
+    from tour_guide.agent_orchestrator import AgentOrchestrator
+    from tour_guide.user_api.tour_guide_api import TourGuideResult, JunctionWinner
 
     print("   Creating route with 3 junctions...")
 

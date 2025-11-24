@@ -9,16 +9,12 @@ to process it with all agents.
 import threading
 from datetime import datetime
 from typing import Optional, Callable, List
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ..route_fetcher.models import Route
+from ..route_fetcher import RouteFetcher
 
-from route_fetcher.models import Route
-from route_fetcher import RouteFetcher
-
-from junction_orchestrator import JunctionOrchestrator, JunctionEvent
-from junction_orchestrator.models import OrchestratorConfig
+from ..junction_orchestrator import JunctionOrchestrator, JunctionEvent
+from ..junction_orchestrator.models import OrchestratorConfig
 
 from .models import FinalReport, JunctionResults
 from .junction_processor import JunctionProcessor

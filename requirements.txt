@@ -1,0 +1,18 @@
+# Tour Guide - Requirements
+# ========================
+#
+# Core dependencies (none - uses only standard library)
+#
+# Optional dependencies:
+
+# REST API (optional)
+# flask>=2.0.0
+
+# Development (optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=23.0.0
+# flake8>=6.0.0
+
+# Install all optional dependencies:
+# pip install flask pytest black flake8

@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tour-guide"
+version = "1.0.0"
+description = "A tour guide system providing personalized recommendations (video, music, history) for each junction along a driving route"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.7"
+authors = [
+    {name = "Tour Guide Team"}
+]
+keywords = [
+    "tour-guide",
+    "navigation",
+    "recommendations",
+    "google-maps",
+    "travel",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+rest = ["flask>=2.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+all = ["flask>=2.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/volo10/Tour_Guide"
+Repository = "https://github.com/volo10/Tour_Guide"
+Documentation = "https://github.com/volo10/Tour_Guide#readme"
+
+[project.scripts]
+tour-guide = "tour_guide.user_api.cli:run_cli"
+
+[tool.setuptools]
+packages = [
+    "tour_guide",
+    "tour_guide.route_fetcher",
+    "tour_guide.junction_orchestrator",
+    "tour_guide.agent_orchestrator",
+    "tour_guide.user_api",
+]
+
+[tool.setuptools.package-dir]
+tour_guide = "tour_guide"
+
+[tool.black]
+line-length = 88
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

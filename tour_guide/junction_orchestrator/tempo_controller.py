@@ -9,12 +9,8 @@ import time
 import threading
 from datetime import datetime, timedelta
 from typing import Optional, List, Generator
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Junction, Route
+from ..route_fetcher.models import Junction, Route
 from .models import OrchestratorConfig, DispatchMode
 
 

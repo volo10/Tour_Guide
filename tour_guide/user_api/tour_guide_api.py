@@ -9,15 +9,11 @@ import json
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher import RouteFetcher
-from route_fetcher.models import Route
-from agent_orchestrator import AgentOrchestrator
-from agent_orchestrator.models import FinalReport, JunctionResults, AgentType
+from ..route_fetcher import RouteFetcher
+from ..route_fetcher.models import Route
+from ..agent_orchestrator import AgentOrchestrator
+from ..agent_orchestrator.models import FinalReport, JunctionResults, AgentType
 
 
 @dataclass

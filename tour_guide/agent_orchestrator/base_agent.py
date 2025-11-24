@@ -7,12 +7,8 @@ Defines the abstract interface that all agents must implement.
 from abc import ABC, abstractmethod
 from typing import Optional
 import time
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Junction
+from ..route_fetcher.models import Junction
 from .models import AgentResult, AgentType
 
 

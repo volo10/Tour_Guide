@@ -8,12 +8,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from enum import Enum
 from datetime import datetime
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Junction
+from ..route_fetcher.models import Junction
 
 
 class AgentType(Enum):

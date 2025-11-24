@@ -7,10 +7,7 @@ get tour recommendations.
 """
 
 import sys
-import os
 import argparse
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .tour_guide_api import TourGuideAPI, get_tour_winners
 

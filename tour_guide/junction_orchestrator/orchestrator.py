@@ -11,13 +11,9 @@ import asyncio
 from datetime import datetime
 from typing import Optional, Callable, Any, List
 from concurrent.futures import ThreadPoolExecutor
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Route, Junction
-from route_fetcher import RouteFetcher
+from ..route_fetcher.models import Route, Junction
+from ..route_fetcher import RouteFetcher
 
 from .models import (
     OrchestratorConfig,

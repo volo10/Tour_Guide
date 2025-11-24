@@ -10,12 +10,8 @@ import queue
 import time
 from datetime import datetime
 from typing import Optional, List
-import sys
-import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from route_fetcher.models import Junction
+from ..route_fetcher.models import Junction
 from .models import AgentResult, JunctionResults, AgentType
 from .base_agent import BaseAgent
 from .agents import VideoAgent, MusicAgent, HistoryAgent, JudgeAgent
