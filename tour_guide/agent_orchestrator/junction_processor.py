@@ -5,6 +5,7 @@ Processes a single junction by spawning threads for each agent,
 collecting results in a queue, and having the Judge decide.
 """
 
+import logging
 import threading
 import queue
 import time
@@ -15,6 +16,8 @@ from ..route_fetcher.models import Junction
 from .models import AgentResult, JunctionResults, AgentType
 from .base_agent import BaseAgent
 from .agents import VideoAgent, MusicAgent, HistoryAgent, JudgeAgent
+
+logger = logging.getLogger(__name__)
 
 
 class JunctionProcessor:
@@ -74,10 +77,17 @@ class JunctionProcessor:
             junction: Junction to process
             results_queue: Queue to put result into
         """
+        junction_id = junction.junction_id
+        agent_type = agent.agent_type.value
+        logger.debug(f"[JID-{junction_id}] {agent_type} agent thread started")
+
         try:
             result = agent.process_with_timing(junction)
             results_queue.put(result)
+            logger.info(f"[JID-{junction_id}] {agent_type} completed: '{result.title}' "
+                       f"(relevance: {result.relevance_score:.1f}, quality: {result.quality_score:.1f})")
         except Exception as e:
+            logger.error(f"[JID-{junction_id}] {agent_type} agent error: {e}", exc_info=True)
             # Put error result
             error_result = AgentResult(
                 agent_type=agent.agent_type,
@@ -108,8 +118,11 @@ class JunctionProcessor:
         Returns:
             JunctionResults with all agent results and winner
         """
+        junction_id = junction.junction_id
         start_time = datetime.now()
         start_timer = time.time()
+
+        logger.info(f"[JID-{junction_id}] Processing junction: {junction.address}")
 
         # Create fresh queue for this junction
         self._results_queue = queue.Queue(maxsize=self.QUEUE_SIZE)
@@ -129,6 +142,8 @@ class JunctionProcessor:
             (self.music_agent, "music"),
             (self.history_agent, "history"),
         ]
+
+        logger.debug(f"[JID-{junction_id}] Spawning 3 agent threads (video, music, history)")
 
         for agent, name in agents:
             thread = threading.Thread(
@@ -172,21 +187,32 @@ class JunctionProcessor:
         for missing in missing_agents:
             error_msg = f"{missing.value} agent timed out"
             junction_results.errors.append(error_msg)
+            logger.warning(f"[JID-{junction_id}] {error_msg}")
+
+        logger.info(f"[JID-{junction_id}] Collected {len(collected_results)}/3 agent results")
 
         # Have the Judge evaluate (if we have any results)
         if collected_results:
             try:
+                logger.debug(f"[JID-{junction_id}] Judge evaluating {len(collected_results)} results")
                 decision = self.judge_agent.evaluate(junction, collected_results)
                 junction_results.decision = decision
                 junction_results.is_complete = True
+                logger.info(f"[JID-{junction_id}] Judge selected: {decision.winner_type.value}")
             except Exception as e:
-                junction_results.errors.append(f"Judge error: {e}")
+                error_msg = f"Judge error: {e}"
+                junction_results.errors.append(error_msg)
+                logger.error(f"[JID-{junction_id}] {error_msg}", exc_info=True)
         else:
-            junction_results.errors.append("No agent results to evaluate")
+            error_msg = "No agent results to evaluate"
+            junction_results.errors.append(error_msg)
+            logger.error(f"[JID-{junction_id}] {error_msg}")
 
         # Finalize timing
         junction_results.completed_at = datetime.now()
         junction_results.total_processing_time_ms = (time.time() - start_timer) * 1000
+
+        logger.info(f"[JID-{junction_id}] Processing complete in {junction_results.total_processing_time_ms:.1f}ms")
 
         return junction_results
 

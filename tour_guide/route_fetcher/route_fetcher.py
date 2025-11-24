@@ -6,11 +6,14 @@ from Google Maps for the Tour Guide system.
 """
 
 import json
+import logging
 from typing import Optional, List, Dict, Any
 
 from .models import Route, RouteRequest
 from .google_maps_client import GoogleMapsClient, GoogleMapsClientError
 from .junction_extractor import JunctionExtractor
+
+logger = logging.getLogger(__name__)
 
 
 class RouteFetcher:
@@ -66,26 +69,41 @@ class RouteFetcher:
             GoogleMapsClientError: If API request fails
             ValueError: If response parsing fails
         """
-        # Fetch route from Google Maps
-        if with_traffic:
-            api_response = self.client.get_route_with_traffic(
-                origin=source,
-                destination=destination,
-                waypoints=waypoints,
-                avoid=avoid,
-            )
-        else:
-            api_response = self.client.get_route(
-                origin=source,
-                destination=destination,
-                waypoints=waypoints,
-                avoid=avoid,
-            )
+        logger.info(f"Fetching route from '{source}' to '{destination}'")
+        logger.debug(f"Options: waypoints={waypoints}, avoid={avoid}, traffic={with_traffic}")
 
-        # Extract junctions
-        route = self.extractor.extract(api_response)
+        try:
+            # Fetch route from Google Maps
+            if with_traffic:
+                api_response = self.client.get_route_with_traffic(
+                    origin=source,
+                    destination=destination,
+                    waypoints=waypoints,
+                    avoid=avoid,
+                )
+            else:
+                api_response = self.client.get_route(
+                    origin=source,
+                    destination=destination,
+                    waypoints=waypoints,
+                    avoid=avoid,
+                )
 
-        return route
+            # Extract junctions
+            route = self.extractor.extract(api_response)
+
+            logger.info(f"Route fetched successfully: {route.junction_count} junctions, "
+                       f"{route.total_distance_text}, {route.total_duration_text}")
+
+            # Log each junction ID for tracking
+            junction_ids = [j.junction_id for j in route.junctions]
+            logger.debug(f"Junction IDs: {junction_ids}")
+
+            return route
+
+        except Exception as e:
+            logger.error(f"Failed to fetch route: {e}", exc_info=True)
+            raise
 
     def fetch_route_from_request(self, request: RouteRequest) -> Route:
         """

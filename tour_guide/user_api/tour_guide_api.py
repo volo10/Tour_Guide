@@ -6,6 +6,7 @@ for a route between source and destination.
 """
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -14,6 +15,8 @@ from ..route_fetcher import RouteFetcher
 from ..route_fetcher.models import Route
 from ..agent_orchestrator import AgentOrchestrator
 from ..agent_orchestrator.models import FinalReport, JunctionResults, AgentType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -164,6 +167,7 @@ class TourGuideAPI:
             TourGuideResult with winners per junction
         """
         start_time = datetime.now()
+        logger.info(f"TourGuideAPI.get_tour() called: '{source}' → '{destination}'")
 
         try:
             # Create orchestrator
@@ -185,6 +189,7 @@ class TourGuideAPI:
                         print(f"  {icon} Junction {result.junction_index + 1}: {result.decision.winner.title}")
 
             # Run the system
+            logger.info("Starting agent orchestrator...")
             report = orchestrator.start_from_addresses(
                 source=source,
                 destination=destination,
@@ -196,9 +201,13 @@ class TourGuideAPI:
             result = self._convert_report(report)
             result.processing_time_seconds = (datetime.now() - start_time).total_seconds()
 
+            logger.info(f"Tour complete: {result.total_junctions} junctions, "
+                       f"{result.video_wins} video / {result.music_wins} music / {result.history_wins} history wins")
+
             return result
 
         except Exception as e:
+            logger.error(f"Error getting tour: {e}", exc_info=True)
             return TourGuideResult(
                 source=source,
                 destination=destination,

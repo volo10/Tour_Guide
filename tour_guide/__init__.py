@@ -40,6 +40,14 @@ from .agent_orchestrator import (
 )
 from .user_api import TourGuideAPI, TourGuideResult, run_cli
 
+# Logging utilities
+from .logging_config import (
+    setup_logging,
+    setup_simple_logging,
+    setup_debug_logging,
+    setup_production_logging,
+)
+
 __all__ = [
     # Version
     "__version__",
@@ -62,4 +70,9 @@ __all__ = [
     "TourGuideAPI",
     "TourGuideResult",
     "run_cli",
+    # Logging
+    "setup_logging",
+    "setup_simple_logging",
+    "setup_debug_logging",
+    "setup_production_logging",
 ]

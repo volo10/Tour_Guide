@@ -6,6 +6,7 @@ When tempo controller releases a junction, spawns a thread
 to process it with all agents.
 """
 
+import logging
 import threading
 from datetime import datetime
 from typing import Optional, Callable, List
@@ -19,6 +20,8 @@ from ..junction_orchestrator.models import OrchestratorConfig
 from .models import FinalReport, JunctionResults
 from .junction_processor import JunctionProcessor
 from .agents import VideoAgent, MusicAgent, HistoryAgent, JudgeAgent
+
+logger = logging.getLogger(__name__)
 
 
 class AgentOrchestrator:
@@ -113,6 +116,8 @@ class AgentOrchestrator:
 
         Spawns a new thread to process the junction with agents.
         """
+        logger.info(f"[JID-{event.junction.junction_id}] Spawning agent processing thread for junction {event.junction_index + 1}")
+
         # Spawn thread for this junction
         thread = threading.Thread(
             target=self._process_junction_thread,
@@ -123,33 +128,51 @@ class AgentOrchestrator:
         self._active_threads.append(thread)
         thread.start()
 
+        logger.debug(f"[JID-{event.junction.junction_id}] Thread spawned: {thread.name}, "
+                    f"Total active threads: {len([t for t in self._active_threads if t.is_alive()])}")
+
     def _process_junction_thread(self, event: JunctionEvent):
         """
         Thread worker that processes a junction with all agents.
 
         This is where the 4 sub-threads are spawned (inside processor.process).
         """
-        # Process junction (spawns 3 agent threads internally)
-        result = self.processor.process(
-            junction=event.junction,
-            junction_index=event.junction_index,
-        )
+        junction_id = event.junction.junction_id
+        logger.info(f"[JID-{junction_id}] Starting agent processing (Video, Music, History → Judge)")
 
-        # Add to final report (thread-safe)
-        with self._results_lock:
-            if self._final_report:
-                self._final_report.add_junction_result(result)
+        try:
+            # Process junction (spawns 3 agent threads internally)
+            result = self.processor.process(
+                junction=event.junction,
+                junction_index=event.junction_index,
+            )
 
-        # Call user callback if registered
-        if self._on_junction_complete:
-            try:
-                self._on_junction_complete(result)
-            except Exception as e:
-                print(f"Junction callback error: {e}")
+            # Add to final report (thread-safe)
+            with self._results_lock:
+                if self._final_report:
+                    self._final_report.add_junction_result(result)
 
-        # Check if this was the last junction
-        if event.is_last:
-            self._finalize_report()
+            # Log result
+            if result.decision:
+                logger.info(f"[JID-{junction_id}] Winner: {result.decision.winner_type.value} "
+                           f"(score: {result.decision.winning_score:.1f})")
+            else:
+                logger.warning(f"[JID-{junction_id}] No winner selected")
+
+            # Call user callback if registered
+            if self._on_junction_complete:
+                try:
+                    self._on_junction_complete(result)
+                except Exception as e:
+                    logger.error(f"[JID-{junction_id}] Junction callback error: {e}", exc_info=True)
+
+            # Check if this was the last junction
+            if event.is_last:
+                logger.info(f"[JID-{junction_id}] Last junction - finalizing report")
+                self._finalize_report()
+
+        except Exception as e:
+            logger.error(f"[JID-{junction_id}] Error processing junction: {e}", exc_info=True)
 
     def _finalize_report(self):
         """Finalize the report when all junctions are processed."""

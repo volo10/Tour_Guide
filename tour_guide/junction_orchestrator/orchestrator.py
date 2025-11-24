@@ -5,6 +5,7 @@ Coordinates tempo-controlled dispatch of junctions from route_fetcher
 to downstream agent modules.
 """
 
+import logging
 import uuid
 import threading
 import asyncio
@@ -24,6 +25,8 @@ from .models import (
     DispatchMode,
 )
 from .tempo_controller import TempoController
+
+logger = logging.getLogger(__name__)
 
 
 class JunctionOrchestrator:
@@ -157,12 +160,17 @@ class JunctionOrchestrator:
 
     def _dispatch_event(self, event: JunctionEvent):
         """Dispatch event to all registered callbacks."""
+        logger.info(f"[JID-{event.junction.junction_id}] Dispatching junction {event.junction_index + 1}/{event.total_junctions}: "
+                   f"{event.junction.street_name} ({event.junction.turn_direction.value})")
+        logger.debug(f"[JID-{event.junction.junction_id}] Coordinates: {event.junction.coordinates.to_string()}, "
+                    f"Progress: {event.progress_percent:.1f}%")
+
         for callback in self._callbacks:
             try:
                 callback(event)
             except Exception as e:
                 self._stats.error_count += 1
-                print(f"Callback error: {e}")
+                logger.error(f"[JID-{event.junction.junction_id}] Callback error: {e}", exc_info=True)
 
     def _run_sync(self):
         """Synchronous orchestration loop."""
@@ -172,6 +180,9 @@ class JunctionOrchestrator:
         junctions = self._current_route.junctions
         self._stats.total_junctions = len(junctions)
         self._stats.start_time = datetime.now()
+
+        logger.info(f"Starting junction orchestration: {len(junctions)} junctions, "
+                   f"interval={self.interval}s")
 
         # Generate schedule
         schedule = list(self.tempo.generate_schedule(junctions, self._current_route))
