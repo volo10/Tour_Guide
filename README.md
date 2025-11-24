@@ -1,558 +1,365 @@
----
-name: Tour Guide System
-description: Intelligent multi-agent tour guide system that provides video, music, history, and evaluation recommendations for any address from Google Maps.
-version: 1.0
----
+# Tour Guide System
 
-# 🌍 Tour Guide System v1.0
-
-**An Intelligent Multi-Agent Travel Recommendation System**
-
----
+An intelligent multi-agent tour guide system that provides personalized recommendations (video, music, history) for each junction along a driving route.
 
 ## Overview
 
-The Tour Guide system is a sophisticated **junction-based navigation assistant** that activates at each turn along a 10-minute driving route. Four specialized agents work together at **each junction** to provide real-time, location-specific content:
+Tour Guide processes driving routes from Google Maps and, for each junction/turn, runs three specialized agents in parallel to find relevant content. A judge agent then picks the winner for each junction.
 
-- 🎬 **Video Finder**: Street-level YouTube videos of the specific intersection
-- 🎵 **Music Finder**: Spotify songs matching the exact street's atmosphere
-- 📖 **History Finder**: Verified historical facts about THIS junction
-- 🏆 **Judge Agent**: Fair evaluation and ranking of recommendations
+**Architecture:**
+```
+Google Maps Route → Tempo Controller → Agent Orchestrator → Winners Report
+                         │
+                         ▼
+                    Junction 1 ──▶ [Video] [Music] [History] → Judge → Winner
+                    Junction 2 ──▶ [Video] [Music] [History] → Judge → Winner
+                    Junction 3 ──▶ [Video] [Music] [History] → Judge → Winner
+                         ...
+```
 
-Each agent uses specialized skills and web APIs to discover relevant content **specific to individual junctions**, and the Judge Agent ensures quality through transparent, fast evaluation (< 500ms per junction).
+## Installation
 
----
+```bash
+# Clone the repository
+git clone https://github.com/volo10/Tour_Guide.git
+cd Tour_Guide
+
+# Install the package
+pip install -e .
+
+# Or install with dev dependencies
+pip install -e ".[dev]"
+```
 
 ## Quick Start
 
-### Basic Usage
+### Python API
+
+```python
+from tour_guide import TourGuideAPI
+
+# Create API instance
+api = TourGuideAPI(
+    junction_interval_seconds=5.0,  # Time between junctions
+    google_maps_api_key="YOUR_KEY"  # Or set GOOGLE_MAPS_API_KEY env var
+)
+
+# Get tour recommendations
+result = api.get_tour(
+    source="Tel Aviv Central Station",
+    destination="Jaffa Port",
+    verbose=True
+)
+
+# Print winners
+result.print_winners()
+
+# Or get as JSON
+json_result = api.get_tour_json(source, destination)
+```
+
+### Command Line
 
 ```bash
-# The system takes a 10-minute driving ROUTE as input:
-Route: Downtown San Francisco, 10-minute drive
-Junctions: Main St → Park Ave → Broadway → 8th St → ...
+# Interactive mode
+python -m tour_guide
 
-# For EACH junction, the system provides:
-1. Street-level YouTube video of that specific intersection
-2. Spotify track matching that street's atmosphere
-3. Historical fact about THAT junction
-4. Judge's evaluation with best recommendation
-
-# Activated automatically as driver approaches each turn
+# Enter source and destination when prompted
 ```
 
-### Example Output for Single Junction
+### Using Individual Modules
 
+```python
+# Route Fetcher - Get route with junctions from Google Maps
+from tour_guide import RouteFetcher
+
+fetcher = RouteFetcher(api_key="YOUR_KEY")
+route = fetcher.fetch_route("Tel Aviv", "Jerusalem")
+print(f"Route has {route.junction_count} junctions")
+
+# Junction Orchestrator - Control tempo of junction dispatch
+from tour_guide import JunctionOrchestrator
+
+orchestrator = JunctionOrchestrator(junction_interval_seconds=10.0)
+
+@orchestrator.on_junction
+def handle_junction(event):
+    print(f"Junction {event.junction_index + 1}: {event.junction.street_name}")
+
+orchestrator.start(route, blocking=True)
+
+# Agent Orchestrator - Full processing with agents
+from tour_guide import AgentOrchestrator
+
+orchestrator = AgentOrchestrator(junction_interval_seconds=5.0)
+report = orchestrator.start(route, blocking=True)
+report.print_summary()
 ```
-⏰ APPROACHING JUNCTION (in 500 meters)
-🚗 TURN: LEFT onto Main Street
-
-🎬 VIDEO: "Downtown Main Street Walking Tour 2024" (88/100)
-   - Real street-level activity, shows this intersection
-   - Current conditions and pedestrian traffic
-
-🎵 MUSIC: "Urban Energy Mix" (85/100)
-   - Captures bustling downtown atmosphere perfectly
-   - Matches Main Street's commercial vibe
-
-📖 HISTORY: "Main Street Built 1897 - Commercial Hub" (92/100)
-   - "Main Street established as primary commercial
-     district in 1897. Victorian buildings represent
-     crucial urban development era."
-
-🏆 WINNER: History Finder (92/100)
-   - Best historical context for this intersection
-```
-
-### Multiple Junctions Example
-
-```
-ROUTE: 10-minute downtown tour (8.5 km, 6 junctions)
-
-JUNCTION 1 - Main St & 5th Ave (LEFT turn)
-  Video (88) | Music (85) | History (92) → WINNER: History
-
-JUNCTION 2 - Park Ave & 8th St (RIGHT turn)
-  Video (79) | Music (88) | History (85) → WINNER: Music
-
-JUNCTION 3 - Broadway & 10th (STRAIGHT)
-  Video (93) | Music (87) | History (86) → WINNER: Video
-
-JUNCTION 4 - Market St & 12th (LEFT turn)
-  Video (84) | Music (91) | History (80) → WINNER: Music
-
-[Continue for all 6 junctions...]
-```
-
----
-
-## System Architecture
-
-### Four Specialized Agents
-
-#### 1. Video Finder Agent 🎬
-Discovers YouTube videos related to locations
-
-**Skills:**
-- Location Contextual Analysis
-- YouTube Video Discovery
-- Relevance Scoring
-- API Web Fetching
-
-**Scoring:** Relevance (40%), Quality (30%), Engagement (20%), Usefulness (10%)
-
-#### 2. Music Finder Agent 🎵
-Finds Spotify songs that capture location essence
-
-**Skills:**
-- Location Cultural Mapping
-- Spotify Track Discovery
-- Mood Context Matching
-- API Web Fetching
-
-**Scoring:** Relevance (40%), Quality (25%), Atmosphere (20%), Discoverability (15%)
-
-#### 3. History Finder Agent 📖
-Discovers historical narratives and fun facts
-
-**Skills:**
-- Historical Research Analysis
-- Fact Finding Verification
-- Narrative Story Crafting
-- API Web Fetching
-
-**Scoring:** Accuracy (35%), Engagement (30%), Depth (20%), Presentation (15%)
-
-#### 4. Judge Agent 🏆
-Evaluates and ranks all recommendations
-
-**Skills:**
-- Content Evaluation
-- Scoring Methodology
-- Comparative Analysis
-- Result Compilation
-
-**Role:** Fair, transparent evaluation with clear winner declaration
-
-### Skill-Based Architecture
-
-The system uses 13 total skills organized by agent:
-- 10 unique skills
-- 3 shared API skill (used by all agents)
-- Modular, independent skills
-- Clear skill dependencies
-
-**See:** `TOUR_GUIDE_SKILLS_SUMMARY.md` for complete skill documentation
-
----
-
-## Key Features
-
-### 🌐 Global Coverage
-- Works with addresses worldwide
-- 195+ countries supported
-- Multilingual location support
-- International APIs (YouTube, Spotify, Wikipedia)
-
-### 🔍 Comprehensive Content Discovery
-- **Video:** Professional YouTube channels
-- **Music:** Artist reputation & popularity
-- **History:** Multiple source verification
-- **Evaluation:** Fair, transparent scoring
-
-### 🎯 Intelligent Filtering
-- Relevance scoring on multiple dimensions
-- Quality assessment by location type
-- Engagement metrics evaluation
-- Usefulness for travelers
-
-### 📊 Fair Evaluation
-- Consistent scoring across different content types
-- Standardized criteria for all agents
-- Transparent point allocation
-- Clear reasoning for winner declaration
-
-### 🔗 API Integration
-- **YouTube Data API**: Video search and metadata
-- **Spotify Web API**: Track search and streaming info
-- **Wikipedia API**: Historical and contextual data
-- Error handling and retry logic
-
-### 📈 Quality Assurance
-- Fact verification for history
-- Source credibility checking
-- Relevance confirmation
-- Quality checklists for all skills
-
----
 
 ## Project Structure
 
 ```
-Tour_Guide/
-├── README.md                          # This file
-├── TOUR_GUIDE_SKILLS_SUMMARY.md      # Complete skills reference
-│
-├── agents/                            # 4 specialized agents
-│   ├── video-finder.md
-│   ├── music-finder.md
-│   ├── history-finder.md
-│   └── judge.md
-│
-├── skills/                            # 13 total skills
-│   ├── video-finder-skills/           # 4 skills (1 shared)
-│   │   ├── location_contextual_analysis.md
-│   │   ├── youtube_video_discovery.md
-│   │   ├── relevance_scoring.md
-│   │   └── api_web_fetching.md
-│   │
-│   ├── music-finder-skills/           # 4 skills (1 shared)
-│   │   ├── location_cultural_mapping.md
-│   │   ├── spotify_track_discovery.md
-│   │   ├── mood_context_matching.md
-│   │   └── api_web_fetching.md (shared)
-│   │
-│   ├── history-finder-skills/         # 4 skills (1 shared)
-│   │   ├── historical_research_analysis.md
-│   │   ├── fact_finding_verification.md
-│   │   ├── narrative_story_crafting.md
-│   │   └── api_web_fetching.md (shared)
-│   │
-│   └── judge-skills/                  # 4 unique skills
-│       ├── content_evaluation.md
-│       ├── scoring_methodology.md
-│       ├── comparative_analysis.md
-│       └── result_compilation.md
-│
-└── scripts/                           # (Future expansion)
-    └── [automation scripts]
+tour_guide/
+├── __init__.py                 # Main package exports
+├── __main__.py                 # CLI entry point
+├── route_fetcher/              # Google Maps integration
+│   ├── models.py               # Route, Junction, Coordinates
+│   ├── google_maps_client.py   # API client
+│   ├── junction_extractor.py   # Parse routes into junctions
+│   └── route_fetcher.py        # Main interface
+├── junction_orchestrator/      # Tempo control
+│   ├── models.py               # Config, Event, State enums
+│   ├── tempo_controller.py     # Timing logic
+│   └── orchestrator.py         # JunctionOrchestrator
+├── agent_orchestrator/         # Multi-threaded agent processing
+│   ├── models.py               # AgentResult, JudgeDecision, FinalReport
+│   ├── agents.py               # Video, Music, History, Judge agents
+│   ├── junction_processor.py   # Threading + queue logic
+│   └── agent_orchestrator.py   # AgentOrchestrator
+└── user_api/                   # User-friendly interfaces
+    ├── tour_guide_api.py       # TourGuideAPI class
+    └── cli.py                  # Command-line interface
+
+tests/                          # Unit tests (61 tests)
+├── conftest.py                 # Pytest fixtures
+├── test_route_fetcher.py
+├── test_junction_orchestrator.py
+├── test_agent_orchestrator.py
+└── test_user_api.py
+
+docs/                           # Documentation
+├── ARCHITECTURE.md             # System architecture diagrams
+├── API_REFERENCE.md            # Complete API documentation
+├── USER_GUIDE.md               # Usage guide
+└── DEVELOPER_GUIDE.md          # How to extend the system
 ```
 
----
+## Module Overview
 
-## How It Works
+### 1. Route Fetcher (`tour_guide.route_fetcher`)
 
-### 1. Input: Google Maps Address
-```
-User provides: "Sacré-Cœur, Paris, France"
-```
+Fetches routes from Google Maps Directions API and extracts junctions.
 
-### 2. Parallel Processing
-All three content agents work simultaneously:
+```python
+from tour_guide import RouteFetcher, Route, Junction
 
-**Video Finder:**
-```
-Location Analysis → YouTube Search → Quality Assessment → Recommendation
-```
+fetcher = RouteFetcher(api_key="YOUR_KEY")
+route = fetcher.fetch_route("Start Address", "End Address")
 
-**Music Finder:**
-```
-Cultural Mapping → Mood Analysis → Spotify Search → Recommendation
-```
+# Route contains:
+# - source_address, destination_address
+# - total_distance_meters, total_duration_seconds
+# - junctions: List[Junction]
 
-**History Finder:**
-```
-Historical Research → Fact Verification → Narrative Crafting → Recommendation
+for junction in route.junctions:
+    print(f"{junction.junction_id}: {junction.street_name}")
+    print(f"  Turn: {junction.turn_direction.value}")
+    print(f"  Coordinates: {junction.coordinates.to_string()}")
 ```
 
-### 3. Judge Evaluation
-```
-3 Recommendations → Quality Assessment → Scoring → Ranking → Winner Declaration
-```
+### 2. Junction Orchestrator (`tour_guide.junction_orchestrator`)
 
-### 4. Output: Comprehensive Report
-- Video recommendation with details
-- Music recommendation with streaming info
-- Historical narrative with timeline
-- Judge's detailed evaluation
-- Clear winner with reasoning
+Controls the tempo of junction dispatch with a configurable interval.
 
----
+```python
+from tour_guide import JunctionOrchestrator
 
-## Scoring Framework
+# Key hyperparameter: junction_interval_seconds
+orchestrator = JunctionOrchestrator(junction_interval_seconds=30.0)
 
-### Video Finder Scoring (100 points)
-- **Relevance:** 40 points (exact location match)
-- **Quality:** 30 points (production value, authority)
-- **Engagement:** 20 points (views, likes, recency)
-- **Usefulness:** 10 points (practical information)
+# Register callback for junction events
+@orchestrator.on_junction
+def on_junction(event):
+    print(f"Junction {event.junction_index + 1}/{event.total_junctions}")
+    print(f"  Street: {event.junction.street_name}")
+    print(f"  Is First: {event.is_first}, Is Last: {event.is_last}")
 
-### Music Finder Scoring (100 points)
-- **Relevance:** 40 points (location essence capture)
-- **Quality:** 25 points (artist reputation, production)
-- **Atmosphere:** 20 points (mood match to location)
-- **Discoverability:** 15 points (streaming availability)
+# Start dispatching (blocking or non-blocking)
+orchestrator.start(route, blocking=True)
 
-### History Finder Scoring (100 points)
-- **Accuracy:** 35 points (fact verification, sources)
-- **Engagement:** 30 points (story quality, interesting facts)
-- **Depth:** 20 points (comprehensive information)
-- **Presentation:** 15 points (organization, clarity)
-
-### Judge's Methodology
-- Applies criteria consistently
-- Normalizes scores across types
-- Provides transparent point allocation
-- Declares clear winner with justification
-
----
-
-## Example: Full System Output
-
-**Location:** "Tower of London, London, England"
-
-### Video Recommendation
-```
-🎬 "Tower of London Complete History"
-   Channel: Historic Royal Palaces
-   Duration: 18:45
-   Views: 1.2M
-   Score: 95/100
-
-   Why: Official channel, comprehensive history,
-   professional production, perfect location match
+# Control methods
+orchestrator.pause()
+orchestrator.resume()
+orchestrator.stop()
 ```
 
-### Music Recommendation
+### 3. Agent Orchestrator (`tour_guide.agent_orchestrator`)
+
+Processes junctions with multiple agents in parallel using threading.
+
+**Threading Model:**
 ```
-🎵 "Rule, Britannia!"
-   Artist: Classic British Artists
-   Duration: 3:20
-   Score: 88/100
-
-   Why: Captures British history and grandeur,
-   iconic British piece, matches historic mood
-```
-
-### History Recommendation
-```
-📖 "Nearly 1000 Years: Tower of London's Story"
-
-   Historical Narrative:
-   [Comprehensive historical narrative with dates,
-    notable events, famous prisoners, Crown Jewels]
-
-   Fun Facts:
-   ✨ Ravens: Legend says if they leave, kingdom falls
-   ✨ Anne Boleyn: Ghost allegedly haunts with head
-   ✨ Crown Jewels: Worth £3+ billion
-
-   Timeline:
-   1066 - Founded by William the Conqueror
-   1536 - Anne Boleyn executed
-   1660 - Crown Jewels moved there
-   1971 - Last prisoner executed
-
-   Score: 98/100
-
-   Why: Excellent historical accuracy, compelling
-   narrative, multiple fascinating facts, verified sources
+Tempo Controller releases junction
+         │
+         ▼
+    Junction Thread (new thread per junction)
+         │
+         ├──▶ Video Agent Thread
+         ├──▶ Music Agent Thread
+         └──▶ History Agent Thread
+                    │
+                    ▼
+              Queue (size 3)
+                    │
+                    ▼
+              Judge Agent (picks winner)
+                    │
+                    ▼
+              Final Report
 ```
 
-### Judge's Evaluation
+**Parallel Processing:** When a new junction is released, a new thread is spawned immediately - even if the previous junction is still being processed. This enables parallel processing of multiple junctions.
+
+```python
+from tour_guide import AgentOrchestrator, FinalReport
+
+orchestrator = AgentOrchestrator(
+    junction_interval_seconds=5.0,
+    agent_timeout_seconds=10.0
+)
+
+# Callbacks
+@orchestrator.on_junction_complete
+def on_junction(results):
+    if results.decision:
+        print(f"Winner: {results.decision.winner.title}")
+
+@orchestrator.on_route_complete
+def on_complete(report):
+    print(f"Video wins: {report.video_wins}")
+    print(f"Music wins: {report.music_wins}")
+    print(f"History wins: {report.history_wins}")
+
+# Process route
+report = orchestrator.start(route, blocking=True)
 ```
-🏆 WINNER: History Finder (98/100)
 
-   🥇 First Place: History Finder - 98/100
-   Reason: Most comprehensive, most engaging,
-   excellent fact depth, perfect historical context
+### 4. User API (`tour_guide.user_api`)
 
-   🥈 Second Place: Video Finder - 95/100
-   Strength: Official channel, professional quality
+Simple, user-friendly interface combining all modules.
 
-   🥉 Third Place: Music Finder - 88/100
-   Strength: Good mood match, historical relevance
+```python
+from tour_guide import TourGuideAPI, TourGuideResult
 
-Detailed Breakdown:
-[Full scoring rationale for each agent]
+api = TourGuideAPI(junction_interval_seconds=5.0)
+result = api.get_tour("Start", "End", verbose=True)
+
+# Result contains:
+# - winners: List[JunctionWinner]
+# - video_wins, music_wins, history_wins
+# - total_junctions, processing_time_seconds
+# - success, error
+
+result.print_winners()  # Formatted output
+result.to_json()        # JSON string
+result.to_dict()        # Dictionary
 ```
 
----
+## Agents
 
-## API Requirements
+### Video Agent
+Finds relevant YouTube videos for each junction location.
 
-### YouTube Data API
-- **Purpose:** Video search and metadata
-- **Rate Limit:** 10,000 units per day
-- **Response Time:** 2-4 seconds per query
-- **Data:** Title, views, duration, channel, URL
+### Music Agent
+Finds Spotify tracks matching the street's atmosphere.
 
-### Spotify Web API
-- **Purpose:** Track search and information
-- **Rate Limit:** Generous (burst limit)
-- **Response Time:** 1-2 seconds per query
-- **Data:** Artist, duration, popularity, preview URL
+### History Agent
+Discovers historical facts about the junction location.
 
-### Wikipedia API
-- **Purpose:** Historical and contextual information
-- **Rate Limit:** Generous
-- **Response Time:** 1-3 seconds per query
-- **Data:** Extracts, images, references
+### Judge Agent
+Evaluates all three contestants and picks the winner based on:
+- Relevance score
+- Quality score
+- Confidence level
 
----
+## Configuration
 
-## Skills Overview
+### Environment Variables
 
-### Shared Skills
-**API Web Fetching** (used by all agents)
-- Constructs optimized API queries
-- Handles HTTP requests
-- Parses JSON responses
-- Error handling and retries
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_MAPS_API_KEY` | Google Maps Directions API key |
+| `YOUTUBE_API_KEY` | YouTube Data API key (optional) |
+| `SPOTIFY_API_KEY` | Spotify API key (optional) |
 
-### Video Finder Skills
-1. **Location Contextual Analysis**: Extracts geographic context
-2. **YouTube Video Discovery**: Searches and ranks videos
-3. **Relevance Scoring**: Assesses video relevance
-4. **API Web Fetching**: Fetches YouTube data
+### Key Parameters
 
-### Music Finder Skills
-1. **Location Cultural Mapping**: Maps to music cultures
-2. **Spotify Track Discovery**: Finds and ranks tracks
-3. **Mood Context Matching**: Matches mood to location
-4. **API Web Fetching**: Fetches Spotify data
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `junction_interval_seconds` | 30.0 | Time between junction dispatches |
+| `agent_timeout_seconds` | 30.0 | Max time for agent processing |
+| `include_straight_junctions` | True | Include "go straight" turns |
 
-### History Finder Skills
-1. **Historical Research Analysis**: Researches location history
-2. **Fact Finding Verification**: Verifies historical facts
-3. **Narrative Story Crafting**: Creates engaging narratives
-4. **API Web Fetching**: Fetches historical data
+## Testing
 
-### Judge Skills
-1. **Content Evaluation**: Assesses content quality
-2. **Scoring Methodology**: Applies scoring framework
-3. **Comparative Analysis**: Compares recommendations
-4. **Result Compilation**: Generates evaluation report
+```bash
+# Run all tests
+pytest
 
----
+# Run with verbose output
+pytest -v
 
-## Usage Scenarios
+# Run specific module tests
+pytest tests/test_route_fetcher.py
 
-### 1. Tourist Planning a Trip
-Input: "Sacré-Cœur Basilica, Paris, France"
-Output: Video to learn about it, song to set mood, history to understand significance
+# Run with coverage
+pytest --cov=tour_guide
+```
 
-### 2. Virtual Tour Guide
-Input: "Machu Picchu, Peru"
-Output: Documentary video, Peruvian music, Incan history
-
-### 3. Historical Research
-Input: "Tower of London, England"
-Output: Historical documentation, period music, verified facts
-
-### 4. Cultural Experience
-Input: "Shibuya Crossing, Tokyo, Japan"
-Output: Modern vlog, J-pop soundtrack, neighborhood history
-
----
-
-## Performance Specifications
-
-| Operation | Time | Accuracy |
-|-----------|------|----------|
-| Location Analysis | < 1s | 95%+ |
-| Video Search | 2-4s | 85%+ |
-| Music Search | 1-2s | 90%+ |
-| History Research | 3-5s | 95%+ |
-| Judge Evaluation | < 2s | 100% |
-| **Full Roundtrip** | **10-15s** | **90%+** |
-
----
-
-## Quality Standards
-
-Every recommendation goes through:
-- ✓ Relevance verification
-- ✓ Quality assessment
-- ✓ Source credibility check
-- ✓ Fact verification (history)
-- ✓ Judge evaluation
-- ✓ Winner declaration with reasoning
-
----
-
-## Future Enhancements
-
-Potential expansions:
-- [ ] Restaurant recommendations
-- [ ] Hotel/accommodation suggestions
-- [ ] Transportation/directions
-- [ ] Cost/budget analysis
-- [ ] Weather/climate information
-- [ ] Local events calendar
-- [ ] Language/communication tips
-- [ ] Safety/travel advisory
-
----
-
-## System Statistics
-
-- **Total Agents:** 4
-- **Total Skills:** 13 (10 unique + 3 shared)
-- **Documentation:** 17 files, 10,000+ lines
-- **API Integrations:** 3 (YouTube, Spotify, Wikipedia)
-- **Global Coverage:** 195+ countries
-- **Languages Supported:** All (via APIs)
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | 2025-11-21 | Initial release with 4 agents, 13 skills |
-
----
+**Test Coverage:** 61 unit tests covering all modules.
 
 ## Documentation
 
-**Main Files:**
-- `README.md` - This file
-- `TOUR_GUIDE_SKILLS_SUMMARY.md` - Complete skills reference
-- `agents/[agent-name].md` - Individual agent documentation
-- `skills/[skill-category]/[skill-name].md` - Individual skill documentation
+- [Architecture](docs/ARCHITECTURE.md) - System architecture and data flow diagrams
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [User Guide](docs/USER_GUIDE.md) - Usage examples and troubleshooting
+- [Developer Guide](docs/DEVELOPER_GUIDE.md) - How to extend and customize
 
----
+## Example Output
 
-## Support
+```
+============================================================
+🚗 TOUR GUIDE RESULTS
+============================================================
+Route: Tel Aviv Central Station → Jaffa Port
+Distance: 5.2 km | Duration: 12 mins
+============================================================
 
-### Getting Help
-1. Review agent documentation (`agents/` directory)
-2. Check skill reference (`TOUR_GUIDE_SKILLS_SUMMARY.md`)
-3. Read specific skill documentation
-4. Review example outputs in README
+📍 WINNERS PER JUNCTION:
 
-### Troubleshooting
-- **No results found:** Try alternative location names
-- **Poor relevance:** Refine address or add more context
-- **API errors:** Check internet connection and API keys
-- **Slow performance:** May be rate-limited; retry later
+  1. Allenby St & Rothschild Blvd
+     Turn: LEFT
+     🎬 VIDEO: Walking Tour of Rothschild Boulevard
+     Score: 85/100
 
----
+  2. Rothschild Blvd & Herzl St
+     Turn: RIGHT
+     📖 HISTORY: The History of Herzl Street
+     Score: 91/100
 
-## License & Attribution
+  3. Herzl St & Jaffa Port
+     Turn: DESTINATION
+     🎵 MUSIC: Mediterranean Vibes Playlist
+     Score: 88/100
 
-**System Version:** 1.0
-**Created:** November 21, 2025
-**Framework:** Claude Code Multi-Agent Architecture
-**Status:** ✓ Production Ready
+============================================================
+📊 SUMMARY:
+   🎬 Video Wins:   1
+   🎵 Music Wins:   1
+   📖 History Wins: 1
+   ⏱️  Processing:   15.23s
+============================================================
+```
 
-🤖 Built with Claude Code
+## License
 
----
+MIT License
 
-## Next Steps
+## Contributing
 
-1. **Test with Addresses:** Try the system with various locations
-2. **Evaluate Results:** Review scoring methodology
-3. **Provide Feedback:** Submit improvements
-4. **Extend System:** Add new agents or skills as needed
-5. **Deploy:** Integrate into travel applications
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new functionality
+4. Submit a pull request
 
----
-
-**The Tour Guide System: Making Every Address a Story** 🌍
-
----
-
-*For detailed technical information, see `TOUR_GUIDE_SKILLS_SUMMARY.md`*
+See [Developer Guide](docs/DEVELOPER_GUIDE.md) for details.
