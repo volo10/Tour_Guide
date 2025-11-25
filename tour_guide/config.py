@@ -27,11 +27,17 @@ YOUTUBE_API_KEY = os.environ.get(
     None  # Set to your key or leave None for simulated results
 )
 
-# Spotify API Key (for music agent - optional)
+# Spotify API Credentials (for music agent - optional)
 # Get from: https://developer.spotify.com/dashboard
-SPOTIFY_API_KEY = os.environ.get(
-    "SPOTIFY_API_KEY",
-    None  # Set to your key or leave None for simulated results
+# Create an app and get Client ID and Client Secret
+SPOTIFY_CLIENT_ID = os.environ.get(
+    "SPOTIFY_CLIENT_ID",
+    None  # Set to your client ID or leave None for fallback results
+)
+
+SPOTIFY_CLIENT_SECRET = os.environ.get(
+    "SPOTIFY_CLIENT_SECRET",
+    None  # Set to your client secret or leave None for fallback results
 )
 
 # ============================================================
@@ -69,6 +75,10 @@ def get_youtube_api_key() -> str:
     """Get YouTube API key from config or environment."""
     return YOUTUBE_API_KEY
 
-def get_spotify_api_key() -> str:
-    """Get Spotify API key from config or environment."""
-    return SPOTIFY_API_KEY
+def get_spotify_client_id() -> str:
+    """Get Spotify Client ID from config or environment."""
+    return SPOTIFY_CLIENT_ID
+
+def get_spotify_client_secret() -> str:
+    """Get Spotify Client Secret from config or environment."""
+    return SPOTIFY_CLIENT_SECRET
