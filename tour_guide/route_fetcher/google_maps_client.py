@@ -7,10 +7,14 @@ to retrieve route data between addresses.
 
 import os
 import json
+import ssl
 import urllib.request
 import urllib.parse
 import urllib.error
+import certifi
 from typing import Optional, Dict, Any, List
+
+from ..config import get_google_maps_api_key
 
 
 class GoogleMapsClientError(Exception):
@@ -34,14 +38,14 @@ class GoogleMapsClient:
 
         Args:
             api_key: Google Maps API key. If not provided,
-                    reads from GOOGLE_MAPS_API_KEY environment variable.
+                    reads from config.py or GOOGLE_MAPS_API_KEY environment variable.
         """
-        self.api_key = api_key or os.environ.get("GOOGLE_MAPS_API_KEY")
+        self.api_key = api_key or get_google_maps_api_key()
 
         if not self.api_key:
             raise GoogleMapsClientError(
                 "Google Maps API key not provided. "
-                "Set GOOGLE_MAPS_API_KEY environment variable or pass api_key parameter."
+                "Set it in tour_guide/config.py or GOOGLE_MAPS_API_KEY environment variable."
             )
 
     def get_route(
@@ -97,7 +101,9 @@ class GoogleMapsClient:
         url = f"{self.BASE_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with urllib.request.urlopen(url, timeout=30) as response:
+            # Create SSL context with certifi certificates
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+            with urllib.request.urlopen(url, timeout=30, context=ssl_context) as response:
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.URLError as e:
             raise GoogleMapsClientError(f"Network error: {e}")

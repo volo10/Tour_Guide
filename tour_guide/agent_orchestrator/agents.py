@@ -16,6 +16,7 @@ from typing import List, Optional
 from ..route_fetcher.models import Junction
 from .models import AgentResult, AgentType, JudgeDecision
 from .base_agent import BaseAgent
+from ..config import get_youtube_api_key, get_spotify_api_key
 
 
 class VideoAgent(BaseAgent):
@@ -33,7 +34,7 @@ class VideoAgent(BaseAgent):
     def initialize(self, api_key: Optional[str] = None):
         """Initialize with optional YouTube API key."""
         super().initialize()
-        self.youtube_api_key = api_key or os.environ.get("YOUTUBE_API_KEY")
+        self.youtube_api_key = api_key or get_youtube_api_key()
 
     def process(self, junction: Junction) -> AgentResult:
         """
@@ -102,7 +103,7 @@ class MusicAgent(BaseAgent):
     def initialize(self, api_key: Optional[str] = None):
         """Initialize with optional Spotify API key."""
         super().initialize()
-        self.spotify_api_key = api_key or os.environ.get("SPOTIFY_API_KEY")
+        self.spotify_api_key = api_key or get_spotify_api_key()
 
     def process(self, junction: Junction) -> AgentResult:
         """

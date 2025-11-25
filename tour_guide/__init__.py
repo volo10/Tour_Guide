@@ -48,6 +48,9 @@ from .logging_config import (
     setup_production_logging,
 )
 
+# Configuration
+from . import config
+
 __all__ = [
     # Version
     "__version__",
@@ -75,4 +78,6 @@ __all__ = [
     "setup_simple_logging",
     "setup_debug_logging",
     "setup_production_logging",
+    # Configuration
+    "config",
 ]

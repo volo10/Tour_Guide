@@ -79,3 +79,11 @@ Thumbs.db
 # Project specific
 *.json.backup
 route_output.json
+
+# Tour Guide output files
+tour_*.json
+tour_*.log
+*_debug.log
+technion_to_tau_results.json
+technion_to_tau_debug.log
+test_interactive.sh

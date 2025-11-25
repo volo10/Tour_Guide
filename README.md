@@ -24,25 +24,46 @@ Google Maps Route → Tempo Controller → Agent Orchestrator → Winners Report
 git clone https://github.com/volo10/Tour_Guide.git
 cd Tour_Guide
 
-# Install the package
-pip install -e .
+# Install dependencies
+pip3 install certifi
 
-# Or install with dev dependencies
-pip install -e ".[dev]"
+# Set your Google Maps API key in tour_guide/config.py
+# See GETTING_STARTED.md for detailed setup instructions
 ```
 
+**📖 New to Tour Guide? Read [GETTING_STARTED.md](GETTING_STARTED.md) for a complete walkthrough!**
+
 ## Quick Start
+
+### Interactive Mode (Recommended for New Users)
+
+The easiest way to get started - just answer a few questions:
+
+```bash
+python3 tour_guide_interactive.py
+```
+
+The script will ask:
+- **Where are you starting from?** (e.g., Tel Aviv, Technion)
+- **Where do you want to go?** (e.g., Jerusalem, Haifa)
+- Then it generates your personalized tour report!
+
+See [INTERACTIVE_MODE.md](INTERACTIVE_MODE.md) for details.
+
+### Run Pre-Made Demo
+
+```bash
+# API key is automatically loaded from tour_guide/config.py
+python3 demo_technion_to_tau.py
+```
 
 ### Python API
 
 ```python
 from tour_guide import TourGuideAPI
 
-# Create API instance
-api = TourGuideAPI(
-    junction_interval_seconds=5.0,  # Time between junctions
-    google_maps_api_key="YOUR_KEY"  # Or set GOOGLE_MAPS_API_KEY env var
-)
+# Create API instance (API key loaded from config.py)
+api = TourGuideAPI(junction_interval_seconds=5.0)
 
 # Get tour recommendations
 result = api.get_tour(
