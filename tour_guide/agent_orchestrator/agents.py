@@ -77,7 +77,7 @@ class VideoAgent(BaseAgent):
                     "videoEmbeddable": "true",
                 }
 
-                response = requests.get(youtube_url, params=params, timeout=5)
+                response = requests.get(youtube_url, params=params, timeout=10)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -255,7 +255,7 @@ class MusicAgent(BaseAgent):
             }
             data = {"grant_type": "client_credentials"}
 
-            response = requests.post(auth_url, headers=headers, data=data, timeout=5)
+            response = requests.post(auth_url, headers=headers, data=data, timeout=10)
 
             if response.status_code == 200:
                 token_data = response.json()
@@ -309,7 +309,7 @@ class MusicAgent(BaseAgent):
                     "market": "IL"
                 }
 
-                response = requests.get(spotify_url, headers=headers, params=params, timeout=5)
+                response = requests.get(spotify_url, headers=headers, params=params, timeout=10)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -539,7 +539,7 @@ class HistoryAgent(BaseAgent):
                     "srprop": "snippet|titlesnippet",
                 }
 
-                response = requests.get(wiki_search_url, params=search_params, headers=headers, timeout=5)
+                response = requests.get(wiki_search_url, params=search_params, headers=headers, timeout=10)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -718,7 +718,7 @@ class HistoryAgent(BaseAgent):
                 "exsentences": 3,
             }
 
-            response = requests.get(wiki_url, params=params, headers=headers, timeout=5)
+            response = requests.get(wiki_url, params=params, headers=headers, timeout=10)
 
             if response.status_code == 200:
                 data = response.json()
