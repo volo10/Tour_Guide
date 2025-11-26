@@ -19,25 +19,25 @@ GOOGLE_MAPS_API_KEY = os.environ.get(
     "AIzaSyAgu_T79gjEJ2tVf5VLBSj7RjXByTDO7fo"  # Default key
 )
 
-# YouTube API Key (for video agent - optional)
+# YouTube API Key (for video agent)
 # Get from: https://console.cloud.google.com/
 # Enable: YouTube Data API v3
 YOUTUBE_API_KEY = os.environ.get(
     "YOUTUBE_API_KEY",
-    None  # Set to your key or leave None for simulated results
+    "AIzaSyCbrBMoPAcv5UuovSlgqyhsIMfLD4Qyd_I"
 )
 
-# Spotify API Credentials (for music agent - optional)
+# Spotify API Credentials (for music agent)
 # Get from: https://developer.spotify.com/dashboard
 # Create an app and get Client ID and Client Secret
 SPOTIFY_CLIENT_ID = os.environ.get(
     "SPOTIFY_CLIENT_ID",
-    None  # Set to your client ID or leave None for fallback results
+    "b7edb21044cd447aa921e991977d709b"
 )
 
 SPOTIFY_CLIENT_SECRET = os.environ.get(
     "SPOTIFY_CLIENT_SECRET",
-    None  # Set to your client secret or leave None for fallback results
+    "8e88b451b2944da7b6b4715028116a21"
 )
 
 # ============================================================
