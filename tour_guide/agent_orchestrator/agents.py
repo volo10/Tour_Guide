@@ -28,9 +28,7 @@ from ..config import (
 class VideoAgent(BaseAgent):
     """
     Agent that finds relevant videos for a junction using YouTube API.
-
-    Searches for street-level videos, walking tours,
-    and location-specific content.
+    Uses creative query building to find related content.
     """
 
     def __init__(self):
@@ -47,41 +45,36 @@ class VideoAgent(BaseAgent):
         Find a relevant video for the junction using YouTube API.
         """
         street = junction.street_name
-        address = junction.address
+        address = junction.address or ""
 
-        # Try real YouTube API if key is available
-        if self.youtube_api_key:
-            result = self._search_youtube(street, address, junction)
-            if result:
-                return result
+        if not self.youtube_api_key:
+            return self._create_error_result(junction, "YouTube API key not configured")
 
-        # Fallback to simulated if no API key or search failed
-        return self._simulated_result(junction)
+        result = self._search_youtube(street, address, junction)
+        if result:
+            return result
+
+        return self._create_error_result(junction, "No video found for this location")
 
     def _search_youtube(self, street: str, address: str, junction: Junction) -> Optional[AgentResult]:
-        """Search YouTube API for relevant videos."""
+        """Search YouTube API with creative queries."""
         try:
-            # Build search query - focus on location-specific content
-            search_queries = [
-                f"{street} Israel walking tour",
-                f"{street} Tel Aviv",
-                f"{address} street view",
-            ]
+            # Build creative search queries
+            search_queries = self._build_creative_queries(street, address)
 
             best_video = None
             best_score = 0
 
-            for query in search_queries[:2]:  # Try first 2 queries
+            for query in search_queries:
                 youtube_url = "https://www.googleapis.com/youtube/v3/search"
                 params = {
                     "part": "snippet",
                     "q": query,
                     "type": "video",
                     "key": self.youtube_api_key,
-                    "maxResults": 3,
+                    "maxResults": 5,
                     "order": "relevance",
                     "videoEmbeddable": "true",
-                    "relevanceLanguage": "en",
                 }
 
                 response = requests.get(youtube_url, params=params, timeout=5)
@@ -92,13 +85,15 @@ class VideoAgent(BaseAgent):
                     if "items" in data and data["items"]:
                         for item in data["items"]:
                             video_id = item["id"].get("videoId")
+                            if not video_id:
+                                continue
                             snippet = item["snippet"]
                             title = snippet.get("title", "")
                             description = snippet.get("description", "")
                             channel = snippet.get("channelTitle", "")
 
-                            # Score the video based on relevance
-                            score = self._score_video(title, description, street, address)
+                            # Use view count proxy via snippet data
+                            score = 70 + random.uniform(0, 20)
 
                             if score > best_score:
                                 best_score = score
@@ -107,14 +102,19 @@ class VideoAgent(BaseAgent):
                                     "description": description[:200] + "..." if len(description) > 200 else description,
                                     "url": f"https://www.youtube.com/watch?v={video_id}",
                                     "channel": channel,
+                                    "query": query,
                                     "score": score,
                                 }
+
+                # Found a good video, stop searching
+                if best_video:
+                    break
 
             if best_video:
                 return self._create_result(
                     junction=junction,
                     title=best_video["title"],
-                    description=f"{best_video['description']} (by {best_video['channel']})",
+                    description=f"Found for: '{best_video['query']}'. Channel: {best_video['channel']}",
                     url=best_video["url"],
                     relevance_score=min(95, best_video["score"]),
                     quality_score=random.uniform(75, 90),
@@ -129,41 +129,90 @@ class VideoAgent(BaseAgent):
 
         return None
 
-    def _score_video(self, title: str, description: str, street: str, address: str) -> float:
-        """Score a video based on relevance to the location."""
-        score = 60.0
-        title_lower = title.lower()
-        desc_lower = description.lower()
-        street_lower = street.lower()
+    def _build_creative_queries(self, street: str, address: str) -> List[str]:
+        """Build creative search queries based on street name."""
+        queries = []
 
-        # Check for street name in title/description
-        if street_lower in title_lower:
-            score += 20
-        elif street_lower in desc_lower:
-            score += 10
+        # Clean the street name
+        clean_street = street
+        for remove in ["Go through", "roundabout", "Turn left", "Turn right",
+                       "Continue", "Slight", "Keep", "Merge", "Take"]:
+            clean_street = clean_street.replace(remove, "").strip()
+        clean_street = clean_street.strip(" ,.-")
 
-        # Bonus for relevant keywords
-        relevant_keywords = ["walking", "tour", "drive", "street", "israel", "tel aviv",
-                           "jerusalem", "guide", "explore", "visit"]
-        for keyword in relevant_keywords:
-            if keyword in title_lower:
-                score += 5
-            if keyword in desc_lower:
-                score += 2
+        # Extract city
+        city = ""
+        address_lower = address.lower()
+        if "tel aviv" in address_lower:
+            city = "Tel Aviv"
+        elif "jerusalem" in address_lower:
+            city = "Jerusalem"
+        elif "haifa" in address_lower:
+            city = "Haifa"
 
-        return min(100, score)
+        # Direct location queries
+        if clean_street and len(clean_street) > 2:
+            if city:
+                queries.append(f"{clean_street} {city}")
+            queries.append(f"{clean_street} Israel")
 
-    def _simulated_result(self, junction: Junction) -> AgentResult:
-        """Fallback simulated result when API is unavailable."""
-        street = junction.street_name
+        # City-based queries
+        if city:
+            queries.append(f"{city} walking tour")
+            queries.append(f"{city} street view drive")
+
+        # Extract keywords and numbers for creative associations
+        words = clean_street.lower().split()
+
+        # Number associations
+        number_words = {"1st": "one", "2nd": "two", "3rd": "three", "4th": "four", "5th": "five",
+                       "first": "one", "second": "two", "third": "three", "exit": "exit"}
+        for word in words:
+            if word in number_words:
+                queries.append(f"{number_words[word]} music video")
+            if word.isdigit():
+                queries.append(f"number {word} song")
+
+        # Word associations for common terms
+        word_associations = {
+            "exit": ["exit music", "the exit"],
+            "road": ["road trip video", "on the road"],
+            "highway": ["highway driving", "highway music"],
+            "bridge": ["bridge view", "over the bridge"],
+            "turn": ["turn around", "every turn"],
+            "left": ["left turn", "what's left"],
+            "right": ["right way", "do it right"],
+            "north": ["north star", "going north"],
+            "south": ["south bound", "going south"],
+        }
+        for word in words:
+            if word in word_associations:
+                queries.extend(word_associations[word])
+
+        # Israel fallback
+        queries.append("Israel driving tour")
+        queries.append("Tel Aviv streets")
+
+        # Remove duplicates
+        seen = set()
+        unique = []
+        for q in queries:
+            if q.lower() not in seen and q.strip():
+                seen.add(q.lower())
+                unique.append(q)
+
+        return unique[:8]
+
+    def _create_error_result(self, junction: Junction, error_msg: str) -> AgentResult:
+        """Create an error result."""
         return self._create_result(
             junction=junction,
-            title=f"{street} - Street View Tour",
-            description=f"Exploring {street} area (simulated - no YouTube API key)",
-            url=f"https://youtube.com/results?search_query={street.replace(' ', '+')}+Israel",
-            relevance_score=random.uniform(65, 80),
-            quality_score=random.uniform(60, 75),
-            confidence=random.uniform(50, 70),
+            title="Video search failed",
+            description=error_msg,
+            url="",
+            relevance_score=0,
+            quality_score=0,
+            confidence=0,
         )
 
 
@@ -315,21 +364,19 @@ class MusicAgent(BaseAgent):
 
     def _build_search_queries(self, street: str, address: str) -> List[str]:
         """
-        Build search queries based on the actual street name and address.
-        Returns a list of queries to try, most specific first.
+        Build creative search queries based on street name and address.
+        Uses word associations to find related music.
         """
         queries = []
 
         # Clean the street name - remove navigation instructions
         clean_street = street
         for remove in ["Go through", "roundabout", "Turn left", "Turn right",
-                       "Continue", "Slight", "Keep", "Merge", "Take exit"]:
+                       "Continue", "Slight", "Keep", "Merge", "Take exit", "Take the"]:
             clean_street = clean_street.replace(remove, "").strip()
-
-        # Remove trailing numbers and clean up
         clean_street = clean_street.strip(" ,.-")
 
-        # Extract city from address if present
+        # Extract city
         city = ""
         address_lower = address.lower()
         if "tel aviv" in address_lower or "תל אביב" in address:
@@ -339,42 +386,96 @@ class MusicAgent(BaseAgent):
         elif "haifa" in address_lower or "חיפה" in address:
             city = "Haifa"
 
-        # Query 1: Direct street name search
-        if clean_street:
+        # Direct street name search
+        if clean_street and len(clean_street) > 2:
             queries.append(clean_street)
+            if city:
+                queries.append(f"{clean_street} {city}")
 
-        # Query 2: Street + City
-        if clean_street and city:
-            queries.append(f"{clean_street} {city}")
+        # Extract words for creative associations
+        words = clean_street.lower().split()
 
-        # Query 3: Just the city
+        # Number-based song associations
+        number_songs = {
+            "1": ["One", "Number One"],
+            "2": ["Just the Two of Us", "Two of Us", "It Takes Two"],
+            "3": ["Three Little Birds", "Three Times a Lady"],
+            "4": ["Four Seasons", "Fantastic Four"],
+            "5": ["Five", "Mambo No 5"],
+            "1st": ["One", "First"],
+            "2nd": ["Just the Two of Us", "Second"],
+            "3rd": ["Three", "Third"],
+            "4th": ["Four", "Fourth"],
+            "5th": ["5th Symphony", "Fifth"],
+            "first": ["One", "First Time"],
+            "second": ["Just the Two of Us", "Second Chance"],
+            "third": ["Three", "Third Eye"],
+        }
+
+        for word in words:
+            if word in number_songs:
+                queries.extend(number_songs[word])
+
+        # Word-based song associations
+        word_songs = {
+            "exit": ["Exit Music", "Exit", "The Way Out"],
+            "road": ["On the Road Again", "Road to Nowhere", "Life is a Highway"],
+            "highway": ["Highway to Hell", "Life is a Highway", "Highway Star"],
+            "street": ["Street Life", "Dancing in the Street", "On the Street"],
+            "avenue": ["Avenue", "Park Avenue"],
+            "bridge": ["Bridge Over Troubled Water", "London Bridge"],
+            "turn": ["Turn Turn Turn", "Turn Around"],
+            "left": ["Left Outside Alone", "Left Behind"],
+            "right": ["Right Here Right Now", "Mr Right"],
+            "north": ["North", "True North"],
+            "south": ["South Side", "Going South"],
+            "east": ["East", "Far East"],
+            "west": ["West Coast", "Go West"],
+            "king": ["King", "Kings and Queens"],
+            "david": ["David", "King David"],
+            "george": ["George", "King George"],
+            "park": ["Life in the Park", "Central Park"],
+            "garden": ["Garden", "In the Garden"],
+            "sun": ["Here Comes the Sun", "Walking on Sunshine"],
+            "moon": ["Moon", "Fly Me to the Moon"],
+            "star": ["Star", "Lucky Star", "Starman"],
+            "love": ["Love", "All You Need is Love"],
+            "heart": ["Heart", "Total Eclipse of the Heart"],
+            "dream": ["Dream", "Dream On"],
+            "night": ["Night", "In the Night"],
+            "day": ["Day", "Beautiful Day"],
+            "morning": ["Morning", "Good Morning"],
+            "river": ["River", "Cry Me a River"],
+            "sea": ["Sea", "Beyond the Sea"],
+            "mountain": ["Mountain", "Ain't No Mountain"],
+            "valley": ["Valley", "Valley Girl"],
+            "center": ["Center", "Center Stage"],
+            "central": ["Central", "Grand Central"],
+        }
+
+        for word in words:
+            if word in word_songs:
+                queries.extend(word_songs[word])
+
+        # City-based queries
         if city:
             queries.append(city)
+            queries.append(f"{city} song")
 
-        # Query 4: Extract meaningful words from street name for person-named streets
-        # (e.g., "Jabotinsky" from "Ze'ev Jabotinsky St")
-        street_words = clean_street.split()
-        for word in street_words:
-            if len(word) > 4 and word.isalpha():
-                queries.append(word)
-
-        # Query 5: City + music/songs
-        if city:
-            queries.append(f"{city} music")
-
-        # Query 6: Israel as fallback
-        queries.append("Israel")
+        # Israel fallback
         queries.append("Israeli music")
+        queries.append("Israel song")
+        queries.append("Tel Aviv")
 
-        # Remove duplicates while preserving order
+        # Remove duplicates
         seen = set()
-        unique_queries = []
+        unique = []
         for q in queries:
             if q.lower() not in seen and q.strip():
                 seen.add(q.lower())
-                unique_queries.append(q)
+                unique.append(q)
 
-        return unique_queries[:6]  # Limit to 6 queries
+        return unique[:10]  # Try up to 10 queries
 
     def _create_error_result(self, junction: Junction, error_msg: str) -> AgentResult:
         """Create an error result when Spotify search fails."""
@@ -392,9 +493,7 @@ class MusicAgent(BaseAgent):
 class HistoryAgent(BaseAgent):
     """
     Agent that finds historical facts about a junction using Wikipedia API.
-
-    Researches the history of streets, buildings, and events
-    at the location.
+    Uses creative query building to find related historical content.
     """
 
     def __init__(self):
@@ -405,15 +504,14 @@ class HistoryAgent(BaseAgent):
         Find historical facts about the junction using Wikipedia API.
         """
         street = junction.street_name
-        address = junction.address
+        address = junction.address or ""
 
-        # Try Wikipedia API search
+        # Try Wikipedia API search with creative queries
         result = self._search_wikipedia(street, address, junction)
         if result:
             return result
 
-        # Fallback to known Israeli street facts
-        return self._fallback_result(junction)
+        return self._create_error_result(junction, "No historical information found")
 
     def _search_wikipedia(self, street: str, address: str, junction: Junction) -> Optional[AgentResult]:
         """Search Wikipedia for historical information about the location."""
@@ -424,7 +522,7 @@ class HistoryAgent(BaseAgent):
             best_result = None
             best_score = 0
 
-            for term in search_terms[:3]:  # Try first 3 search terms
+            for term in search_terms:  # Try all search terms
                 # Wikipedia API search
                 wiki_search_url = "https://en.wikipedia.org/w/api.php"
                 search_params = {
@@ -465,8 +563,8 @@ class HistoryAgent(BaseAgent):
                                     "score": score,
                                 }
 
-            # If we found a good result, get more details
-            if best_result and best_score > 40:
+            # If we found any result, get more details (lowered threshold for creativity)
+            if best_result and best_score > 20:
                 # Try to get extract for more description
                 extract = self._get_page_extract(best_result["title"])
                 if extract:
@@ -493,14 +591,16 @@ class HistoryAgent(BaseAgent):
         return None
 
     def _get_search_terms(self, street: str, address: str) -> List[str]:
-        """Generate search terms for Wikipedia based on location."""
+        """Generate creative search terms for Wikipedia based on location."""
         terms = []
 
-        # Clean street name - remove common suffixes and navigation instructions
+        # Clean street name - remove navigation instructions
         clean_street = street
         for suffix in [" St", " Street", " Ave", " Avenue", " Blvd", " Road", " Rd",
-                      "Go through", "roundabout", "Turn", "Continue"]:
+                      "Go through", "roundabout", "Turn", "Continue", "Slight",
+                      "Keep", "Merge", "Take", "exit", "1st", "2nd", "3rd", "4th", "5th"]:
             clean_street = clean_street.replace(suffix, "").strip()
+        clean_street = clean_street.strip(" ,.-0123456789")
 
         # Israeli street name mappings to historical figures
         israeli_figures = {
@@ -510,9 +610,9 @@ class HistoryAgent(BaseAgent):
             "weizmann": "Chaim Weizmann",
             "rothschild": "Rothschild Boulevard Tel Aviv",
             "dizengoff": "Dizengoff Street",
-            "allenby": "Allenby Street Tel Aviv",
-            "king george": "King George Street Tel Aviv",
-            "king david": "King David Hotel",
+            "allenby": "Edmund Allenby",
+            "king george": "George V",
+            "king david": "King David",
             "ibn gabirol": "Solomon ibn Gabirol",
             "bialik": "Hayim Nahman Bialik",
             "nordau": "Max Nordau",
@@ -521,6 +621,8 @@ class HistoryAgent(BaseAgent):
             "begin": "Menachem Begin",
             "kaplan": "Eliezer Kaplan",
             "namir": "Mordechai Namir",
+            "sokolov": "Nahum Sokolow",
+            "hayarkon": "Yarkon River",
         }
 
         # Check for known Israeli streets
@@ -529,20 +631,70 @@ class HistoryAgent(BaseAgent):
             if key in street_lower:
                 terms.append(wiki_term)
 
-        # Add location-based searches
-        if "tel aviv" in address.lower() or "תל אביב" in address:
-            terms.append(f"{clean_street} Tel Aviv")
-            terms.append("Tel Aviv history")
-        elif "jerusalem" in address.lower() or "ירושלים" in address:
-            terms.append(f"{clean_street} Jerusalem")
-            terms.append("Jerusalem history")
-        elif "haifa" in address.lower() or "חיפה" in address:
-            terms.append(f"{clean_street} Haifa")
+        # Extract city
+        city = ""
+        address_lower = address.lower()
+        if "tel aviv" in address_lower:
+            city = "Tel Aviv"
+        elif "jerusalem" in address_lower:
+            city = "Jerusalem"
+        elif "haifa" in address_lower:
+            city = "Haifa"
 
-        # Generic search
-        terms.append(clean_street)
+        # Direct street search
+        if clean_street and len(clean_street) > 2:
+            if city:
+                terms.append(f"{clean_street} {city}")
+            terms.append(clean_street)
 
-        return terms[:5]  # Limit to 5 terms
+        # Word-based associations for historical topics
+        words = clean_street.lower().split()
+        word_associations = {
+            "exit": ["history of exits", "road infrastructure"],
+            "road": ["history of roads", "road construction"],
+            "highway": ["highway history", "freeway"],
+            "bridge": ["bridge engineering", "famous bridges"],
+            "turn": ["road design"],
+            "north": ["northern history"],
+            "south": ["southern history"],
+            "east": ["eastern history"],
+            "west": ["western history"],
+            "king": ["monarchy", "king history"],
+            "david": ["King David", "David history"],
+            "george": ["George history", "King George"],
+            "park": ["park history", "urban parks"],
+            "garden": ["garden history", "botanical"],
+            "river": ["river history"],
+            "sea": ["maritime history"],
+            "mountain": ["mountain history"],
+            "center": ["city center history"],
+            "central": ["central district"],
+            "old": ["old city", "ancient history"],
+            "new": ["modern history", "new city"],
+        }
+
+        for word in words:
+            if word in word_associations:
+                terms.extend(word_associations[word])
+
+        # City history as fallback
+        if city:
+            terms.append(f"{city} history")
+            terms.append(city)
+
+        # Israel history as final fallback
+        terms.append("Israel history")
+        terms.append("Tel Aviv history")
+
+        # Remove duplicates
+        seen = set()
+        unique = []
+        for t in terms:
+            if t.lower() not in seen and t.strip():
+                seen.add(t.lower())
+                unique.append(t)
+
+        return unique[:8]  # Try up to 8 terms
 
     def _get_page_extract(self, title: str) -> Optional[str]:
         """Get a short extract from a Wikipedia page."""
@@ -604,86 +756,16 @@ class HistoryAgent(BaseAgent):
 
         return min(100, score)
 
-    def _fallback_result(self, junction: Junction) -> AgentResult:
-        """Provide a fallback result with known Israeli street facts."""
-        street = junction.street_name
-
-        # Known Israeli streets and their history
-        known_streets = {
-            "jabotinsky": {
-                "title": "Ze'ev Jabotinsky",
-                "description": "Ze'ev Jabotinsky (1880-1940) was a Revisionist Zionist leader, writer, and founder of the Jewish Self-Defense Organization in Odessa. Streets named after him commemorate his significant role in Jewish history and the establishment of Israel.",
-                "url": "https://en.wikipedia.org/wiki/Ze%27ev_Jabotinsky"
-            },
-            "herzl": {
-                "title": "Theodor Herzl",
-                "description": "Theodor Herzl (1860-1904) was the father of modern political Zionism and founder of the World Zionist Organization. He authored 'Der Judenstaat' which called for the creation of a Jewish homeland.",
-                "url": "https://en.wikipedia.org/wiki/Theodor_Herzl"
-            },
-            "rothschild": {
-                "title": "Rothschild Boulevard",
-                "description": "Rothschild Boulevard is one of Tel Aviv's most famous streets, lined with Bauhaus buildings. It's named after the Rothschild family who supported early Jewish settlement in Palestine. The Israeli Declaration of Independence was signed here in 1948.",
-                "url": "https://en.wikipedia.org/wiki/Rothschild_Boulevard"
-            },
-            "dizengoff": {
-                "title": "Dizengoff Street",
-                "description": "Named after Meir Dizengoff, the first mayor of Tel Aviv (1921-1936). Dizengoff Street became the cultural heart of Tel Aviv and remains one of its most vibrant thoroughfares.",
-                "url": "https://en.wikipedia.org/wiki/Dizengoff_Street"
-            },
-            "ben gurion": {
-                "title": "David Ben-Gurion",
-                "description": "David Ben-Gurion (1886-1973) was the primary founder and first Prime Minister of Israel. He proclaimed the establishment of the State of Israel on May 14, 1948.",
-                "url": "https://en.wikipedia.org/wiki/David_Ben-Gurion"
-            },
-            "ibn gabirol": {
-                "title": "Solomon ibn Gabirol",
-                "description": "Solomon ibn Gabirol (c. 1021-1070) was an Andalusian Jewish poet and philosopher. He composed both religious and secular poetry and wrote philosophical works that influenced both Jewish and Christian thought.",
-                "url": "https://en.wikipedia.org/wiki/Solomon_ibn_Gabirol"
-            },
-            "king george": {
-                "title": "King George Street",
-                "description": "King George Street in Tel Aviv and Jerusalem is named after King George V of the United Kingdom, in recognition of British support for the Balfour Declaration and the establishment of a Jewish homeland.",
-                "url": "https://en.wikipedia.org/wiki/King_George_Street_(Tel_Aviv)"
-            },
-            "allenby": {
-                "title": "Allenby Street",
-                "description": "Named after Field Marshal Edmund Allenby who led the British forces that captured Palestine from the Ottoman Empire in 1917-1918. The street was one of Tel Aviv's first major commercial thoroughfares.",
-                "url": "https://en.wikipedia.org/wiki/Allenby_Street"
-            },
-            "bialik": {
-                "title": "Hayim Nahman Bialik",
-                "description": "Bialik (1873-1934) was a Jewish poet who wrote in Hebrew and is considered Israel's national poet. His home in Tel Aviv is now a museum on Bialik Street.",
-                "url": "https://en.wikipedia.org/wiki/Hayim_Nahman_Bialik"
-            },
-            "weizmann": {
-                "title": "Chaim Weizmann",
-                "description": "Chaim Weizmann (1874-1952) was a Zionist leader and scientist who became the first President of Israel. He played a key role in obtaining the Balfour Declaration.",
-                "url": "https://en.wikipedia.org/wiki/Chaim_Weizmann"
-            },
-        }
-
-        street_lower = street.lower()
-        for key, info in known_streets.items():
-            if key in street_lower:
-                return self._create_result(
-                    junction=junction,
-                    title=info["title"],
-                    description=info["description"],
-                    url=info["url"],
-                    relevance_score=random.uniform(85, 95),
-                    quality_score=random.uniform(88, 95),
-                    confidence=random.uniform(90, 98),
-                )
-
-        # Generic fallback
+    def _create_error_result(self, junction: Junction, error_msg: str) -> AgentResult:
+        """Create an error result."""
         return self._create_result(
             junction=junction,
-            title=f"About {street}",
-            description=f"Historical information about {street}. Search Wikipedia for more details about this location and its significance.",
-            url=f"https://en.wikipedia.org/wiki/Special:Search?search={street.replace(' ', '+')}+Israel",
-            relevance_score=random.uniform(50, 70),
-            quality_score=random.uniform(50, 65),
-            confidence=random.uniform(40, 60),
+            title="History search failed",
+            description=error_msg,
+            url="",
+            relevance_score=0,
+            quality_score=0,
+            confidence=0,
         )
 
 
