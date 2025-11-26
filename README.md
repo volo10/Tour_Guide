@@ -25,10 +25,81 @@ git clone https://github.com/volo10/Tour_Guide.git
 cd Tour_Guide
 
 # Install dependencies
-pip3 install certifi
+pip3 install certifi requests
+```
 
-# Set your Google Maps API key in tour_guide/config.py
-# See GETTING_STARTED.md for detailed setup instructions
+## API Keys Setup
+
+The system requires API keys to fetch real content from YouTube, Spotify, and Google Maps. Edit `tour_guide/config.py` to add your keys:
+
+### 1. Google Maps API Key (Required)
+Used to fetch driving routes and junctions.
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select existing)
+3. Go to **APIs & Services** → **Library**
+4. Search for **"Directions API"** → Click **Enable**
+5. Go to **APIs & Services** → **Credentials**
+6. Click **Create Credentials** → **API Key**
+7. Copy the key and add to `config.py`:
+   ```python
+   GOOGLE_MAPS_API_KEY = "AIzaSy..."
+   ```
+
+### 2. YouTube API Key (Required for Video Agent)
+Used to search for relevant videos at each junction.
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Go to **APIs & Services** → **Library**
+3. Search for **"YouTube Data API v3"** → Click **Enable**
+4. Go to **APIs & Services** → **Credentials**
+5. Click **Create Credentials** → **API Key**
+6. Copy the key and add to `config.py`:
+   ```python
+   YOUTUBE_API_KEY = "AIzaSy..."
+   ```
+
+### 3. Spotify API Credentials (Required for Music Agent)
+Used to search for relevant music at each junction.
+
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Log in with your Spotify account (or create one - it's free)
+3. Click **Create App**
+4. Fill in:
+   - App name: `TourGuide`
+   - App description: `Music recommendations for driving`
+   - Redirect URI: `http://localhost:3000` (required but not used)
+5. Click **Create**
+6. On your app page, click **Settings**
+7. Copy **Client ID** and **Client Secret** (click "View client secret")
+8. Add to `config.py`:
+   ```python
+   SPOTIFY_CLIENT_ID = "your_client_id"
+   SPOTIFY_CLIENT_SECRET = "your_client_secret"
+   ```
+
+### Example `config.py` with all keys:
+```python
+# tour_guide/config.py
+
+# Google Maps API Key (for route fetching)
+GOOGLE_MAPS_API_KEY = "AIzaSyAbc123..."
+
+# YouTube API Key (for video search)
+YOUTUBE_API_KEY = "AIzaSyXyz789..."
+
+# Spotify API Credentials (for music search)
+SPOTIFY_CLIENT_ID = "a1b2c3d4e5f6..."
+SPOTIFY_CLIENT_SECRET = "x9y8z7w6v5u4..."
+```
+
+### Alternative: Environment Variables
+You can also set API keys as environment variables:
+```bash
+export GOOGLE_MAPS_API_KEY="your_key"
+export YOUTUBE_API_KEY="your_key"
+export SPOTIFY_CLIENT_ID="your_id"
+export SPOTIFY_CLIENT_SECRET="your_secret"
 ```
 
 **📖 New to Tour Guide? Read [GETTING_STARTED.md](GETTING_STARTED.md) for a complete walkthrough!**
@@ -297,11 +368,12 @@ Evaluates all three contestants and picks the winner based on:
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `GOOGLE_MAPS_API_KEY` | Google Maps Directions API key |
-| `YOUTUBE_API_KEY` | YouTube Data API key (optional) |
-| `SPOTIFY_API_KEY` | Spotify API key (optional) |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GOOGLE_MAPS_API_KEY` | Google Maps Directions API key | Yes |
+| `YOUTUBE_API_KEY` | YouTube Data API v3 key | Yes (for Video Agent) |
+| `SPOTIFY_CLIENT_ID` | Spotify App Client ID | Yes (for Music Agent) |
+| `SPOTIFY_CLIENT_SECRET` | Spotify App Client Secret | Yes (for Music Agent) |
 
 ### Key Parameters
 
