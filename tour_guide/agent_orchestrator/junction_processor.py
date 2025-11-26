@@ -58,6 +58,12 @@ class JunctionProcessor:
         self.history_agent = history_agent or HistoryAgent()
         self.judge_agent = judge_agent or JudgeAgent()
 
+        # Initialize agents (loads API keys from config)
+        self.video_agent.initialize()
+        self.music_agent.initialize()
+        self.history_agent.initialize()
+        self.judge_agent.initialize()
+
         self.timeout = timeout_seconds
 
         # Results queue (size 3 for the 3 contestants)
