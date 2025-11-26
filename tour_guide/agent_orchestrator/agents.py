@@ -522,6 +522,11 @@ class HistoryAgent(BaseAgent):
             best_result = None
             best_score = 0
 
+            # Wikipedia requires User-Agent header
+            headers = {
+                "User-Agent": "TourGuideApp/1.0 (https://github.com/tour-guide; tour@guide.com)"
+            }
+
             for term in search_terms:  # Try all search terms
                 # Wikipedia API search
                 wiki_search_url = "https://en.wikipedia.org/w/api.php"
@@ -534,7 +539,7 @@ class HistoryAgent(BaseAgent):
                     "srprop": "snippet|titlesnippet",
                 }
 
-                response = requests.get(wiki_search_url, params=search_params, timeout=5)
+                response = requests.get(wiki_search_url, params=search_params, headers=headers, timeout=5)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -700,6 +705,9 @@ class HistoryAgent(BaseAgent):
         """Get a short extract from a Wikipedia page."""
         try:
             wiki_url = "https://en.wikipedia.org/w/api.php"
+            headers = {
+                "User-Agent": "TourGuideApp/1.0 (https://github.com/tour-guide; tour@guide.com)"
+            }
             params = {
                 "action": "query",
                 "titles": title,
@@ -710,7 +718,7 @@ class HistoryAgent(BaseAgent):
                 "exsentences": 3,
             }
 
-            response = requests.get(wiki_url, params=params, timeout=5)
+            response = requests.get(wiki_url, params=params, headers=headers, timeout=5)
 
             if response.status_code == 200:
                 data = response.json()
