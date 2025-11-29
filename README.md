@@ -30,76 +30,46 @@ pip3 install certifi requests
 
 ## API Keys Setup
 
-The system requires API keys to fetch real content from YouTube, Spotify, and Google Maps. Edit `tour_guide/config.py` to add your keys:
+The system requires API keys to fetch real content from YouTube, Spotify, and Google Maps.
 
-### 1. Google Maps API Key (Required)
-Used to fetch driving routes and junctions.
+**For detailed instructions, see [docs/API_KEYS_SETUP.md](docs/API_KEYS_SETUP.md)**
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or select existing)
-3. Go to **APIs & Services** → **Library**
-4. Search for **"Directions API"** → Click **Enable**
-5. Go to **APIs & Services** → **Credentials**
-6. Click **Create Credentials** → **API Key**
-7. Copy the key and add to `config.py`:
-   ```python
-   GOOGLE_MAPS_API_KEY = "AIzaSy..."
-   ```
+### Quick Setup
 
-### 2. YouTube API Key (Required for Video Agent)
-Used to search for relevant videos at each junction.
+Set environment variables with your API keys:
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Go to **APIs & Services** → **Library**
-3. Search for **"YouTube Data API v3"** → Click **Enable**
-4. Go to **APIs & Services** → **Credentials**
-5. Click **Create Credentials** → **API Key**
-6. Copy the key and add to `config.py`:
-   ```python
-   YOUTUBE_API_KEY = "AIzaSy..."
-   ```
+```bash
+# Linux/macOS
+export GOOGLE_MAPS_API_KEY="your_google_maps_key"
+export YOUTUBE_API_KEY="your_youtube_key"
+export SPOTIFY_CLIENT_ID="your_spotify_client_id"
+export SPOTIFY_CLIENT_SECRET="your_spotify_client_secret"
 
-### 3. Spotify API Credentials (Required for Music Agent)
-Used to search for relevant music at each junction.
-
-1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-2. Log in with your Spotify account (or create one - it's free)
-3. Click **Create App**
-4. Fill in:
-   - App name: `TourGuide`
-   - App description: `Music recommendations for driving`
-   - Redirect URI: `http://localhost:3000` (required but not used)
-5. Click **Create**
-6. On your app page, click **Settings**
-7. Copy **Client ID** and **Client Secret** (click "View client secret")
-8. Add to `config.py`:
-   ```python
-   SPOTIFY_CLIENT_ID = "your_client_id"
-   SPOTIFY_CLIENT_SECRET = "your_client_secret"
-   ```
-
-### Example `config.py` with all keys:
-```python
-# tour_guide/config.py
-
-# Google Maps API Key (for route fetching)
-GOOGLE_MAPS_API_KEY = "AIzaSyAbc123..."
-
-# YouTube API Key (for video search)
-YOUTUBE_API_KEY = "AIzaSyXyz789..."
-
-# Spotify API Credentials (for music search)
-SPOTIFY_CLIENT_ID = "a1b2c3d4e5f6..."
-SPOTIFY_CLIENT_SECRET = "x9y8z7w6v5u4..."
+# Windows (PowerShell)
+$env:GOOGLE_MAPS_API_KEY="your_google_maps_key"
+$env:YOUTUBE_API_KEY="your_youtube_key"
+$env:SPOTIFY_CLIENT_ID="your_spotify_client_id"
+$env:SPOTIFY_CLIENT_SECRET="your_spotify_client_secret"
 ```
 
-### Alternative: Environment Variables
-You can also set API keys as environment variables:
-```bash
-export GOOGLE_MAPS_API_KEY="your_key"
-export YOUTUBE_API_KEY="your_key"
-export SPOTIFY_CLIENT_ID="your_id"
-export SPOTIFY_CLIENT_SECRET="your_secret"
+### Where to Get Keys
+
+| API | Get Key From | Free Tier |
+|-----|--------------|-----------|
+| Google Maps Directions | [Google Cloud Console](https://console.cloud.google.com/) | $200/month credit |
+| YouTube Data API v3 | [Google Cloud Console](https://console.cloud.google.com/) | 10,000 units/day |
+| Spotify Web API | [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) | Unlimited |
+
+### Verify Setup
+
+```python
+from tour_guide.config import validate_api_keys
+
+result = validate_api_keys()
+if result['valid']:
+    print("All API keys configured!")
+else:
+    print(f"Missing: {result['missing']}")
 ```
 
 **📖 New to Tour Guide? Read [GETTING_STARTED.md](GETTING_STARTED.md) for a complete walkthrough!**
@@ -212,16 +182,21 @@ tour_guide/
     ├── tour_guide_api.py       # TourGuideAPI class
     └── cli.py                  # Command-line interface
 
-tests/                          # Unit tests (61 tests)
+tests/                          # Unit tests (130 tests)
 ├── conftest.py                 # Pytest fixtures
 ├── test_route_fetcher.py
 ├── test_junction_orchestrator.py
 ├── test_agent_orchestrator.py
-└── test_user_api.py
+├── test_user_api.py
+├── test_google_maps_client.py  # Google Maps API client tests
+├── test_junction_processor.py  # Junction processor tests
+├── test_rest_api.py            # REST API endpoint tests
+└── test_agents_detailed.py     # Detailed agent tests
 
 docs/                           # Documentation
 ├── ARCHITECTURE.md             # System architecture diagrams
 ├── API_REFERENCE.md            # Complete API documentation
+├── API_KEYS_SETUP.md           # How to get and configure API keys
 ├── USER_GUIDE.md               # Usage guide
 └── DEVELOPER_GUIDE.md          # How to extend the system
 ```
@@ -399,10 +374,11 @@ pytest tests/test_route_fetcher.py
 pytest --cov=tour_guide
 ```
 
-**Test Coverage:** 61 unit tests covering all modules.
+**Test Coverage:** 130 unit tests covering all modules.
 
 ## Documentation
 
+- [API Keys Setup](docs/API_KEYS_SETUP.md) - How to get and configure API keys
 - [Architecture](docs/ARCHITECTURE.md) - System architecture and data flow diagrams
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [User Guide](docs/USER_GUIDE.md) - Usage examples and troubleshooting
