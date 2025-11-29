@@ -10,7 +10,7 @@ import threading
 import queue
 import time
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Callable
 
 from ..route_fetcher.models import Junction
 from .models import AgentResult, JunctionResults, AgentType
@@ -226,7 +226,7 @@ class JunctionProcessor:
         self,
         junction: Junction,
         junction_index: int,
-        callback: callable,
+        callback: Callable[[JunctionResults], None],
     ) -> threading.Thread:
         """
         Process a junction asynchronously.

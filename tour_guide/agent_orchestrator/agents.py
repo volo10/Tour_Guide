@@ -8,12 +8,13 @@ Contains the four agents:
 - JudgeAgent: Evaluates and picks the winner
 """
 
+import logging
 import random
+import re
 import time
-import os
 import base64
 import requests
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Callable
 
 from ..route_fetcher.models import Junction
 from .models import AgentResult, AgentType, JudgeDecision
@@ -23,6 +24,16 @@ from ..config import (
     get_spotify_client_id,
     get_spotify_client_secret
 )
+
+logger = logging.getLogger(__name__)
+
+# ============================================================
+# SCORING CONSTANTS
+# ============================================================
+BASE_VIDEO_SCORE = 70
+VIDEO_SCORE_VARIANCE = 20
+MAX_RELEVANCE_SCORE = 95
+FRESHNESS_MAX_TIME_MS = 500
 
 
 class VideoAgent(BaseAgent):
@@ -93,7 +104,7 @@ class VideoAgent(BaseAgent):
                             channel = snippet.get("channelTitle", "")
 
                             # Use view count proxy via snippet data
-                            score = 70 + random.uniform(0, 20)
+                            score = BASE_VIDEO_SCORE + random.uniform(0, VIDEO_SCORE_VARIANCE)
 
                             if score > best_score:
                                 best_score = score
@@ -123,9 +134,11 @@ class VideoAgent(BaseAgent):
                 )
 
         except requests.exceptions.RequestException as e:
-            print(f"YouTube API error: {e}")
+            logger.error(f"YouTube API request error: {e}")
+        except (KeyError, ValueError) as e:
+            logger.error(f"YouTube API response parsing error: {e}")
         except Exception as e:
-            print(f"YouTube search error: {e}")
+            logger.exception(f"Unexpected error in YouTube search: {e}")
 
         return None
 
@@ -263,8 +276,12 @@ class MusicAgent(BaseAgent):
                 self.token_expires_at = time.time() + token_data.get("expires_in", 3600) - 300
                 return self.spotify_token
 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Spotify authentication request error: {e}")
+        except (KeyError, ValueError) as e:
+            logger.error(f"Spotify authentication response parsing error: {e}")
         except Exception as e:
-            print(f"Spotify auth error: {e}")
+            logger.exception(f"Unexpected error in Spotify authentication: {e}")
 
         return None
 
@@ -362,9 +379,11 @@ class MusicAgent(BaseAgent):
                 )
 
         except requests.exceptions.RequestException as e:
-            print(f"Spotify API error: {e}")
+            logger.error(f"Spotify API request error: {e}")
+        except (KeyError, ValueError) as e:
+            logger.error(f"Spotify API response parsing error: {e}")
         except Exception as e:
-            print(f"Spotify search error: {e}")
+            logger.exception(f"Unexpected error in Spotify search: {e}")
 
         return None
 
@@ -595,9 +614,11 @@ class HistoryAgent(BaseAgent):
                 )
 
         except requests.exceptions.RequestException as e:
-            print(f"Wikipedia API error: {e}")
+            logger.error(f"Wikipedia API request error: {e}")
+        except (KeyError, ValueError) as e:
+            logger.error(f"Wikipedia API response parsing error: {e}")
         except Exception as e:
-            print(f"Wikipedia search error: {e}")
+            logger.exception(f"Unexpected error in Wikipedia search: {e}")
 
         return None
 
@@ -734,14 +755,15 @@ class HistoryAgent(BaseAgent):
                     if page_id != "-1":  # -1 means page not found
                         return page_data.get("extract", "")
 
-        except Exception:
-            pass
+        except requests.exceptions.RequestException as e:
+            logger.debug(f"Wikipedia page extract request error: {e}")
+        except (KeyError, ValueError) as e:
+            logger.debug(f"Wikipedia page extract parsing error: {e}")
 
         return None
 
     def _clean_html(self, text: str) -> str:
         """Remove HTML tags from text."""
-        import re
         clean = re.sub(r'<[^>]+>', '', text)
         clean = clean.replace("&quot;", '"').replace("&amp;", "&")
         return clean
@@ -851,8 +873,7 @@ class JudgeAgent(BaseAgent):
             )
 
             # Add freshness bonus (faster = better)
-            max_time = 500  # ms
-            freshness_bonus = max(0, (max_time - contestant.processing_time_ms) / max_time * 10)
+            freshness_bonus = max(0, (FRESHNESS_MAX_TIME_MS - contestant.processing_time_ms) / FRESHNESS_MAX_TIME_MS * 10)
             score += freshness_bonus * freshness_weight
 
             judge_scores[contestant.agent_type.value] = score
