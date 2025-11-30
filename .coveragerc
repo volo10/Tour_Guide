@@ -1,0 +1,16 @@
+[run]
+source = tour_guide
+omit =
+    tour_guide/**/example.py
+    tour_guide/**/__main__.py
+    tour_guide/config.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    pass
+
+[html]
+directory = htmlcov

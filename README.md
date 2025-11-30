@@ -76,12 +76,33 @@ else:
 
 ## Quick Start
 
-### Interactive Mode (Recommended for New Users)
-
-The easiest way to get started - just answer a few questions:
+### Step 1: Setup .env File
 
 ```bash
-python3 tour_guide_interactive.py
+# Copy the example file
+copy .env.example .env
+
+# Edit .env and add your API keys
+notepad .env
+```
+
+### Step 2: Run Demo (One Command!)
+
+```bash
+python run_demo.py
+```
+
+Or specify custom route:
+```bash
+python run_demo.py "Tel Aviv" "Jerusalem"
+```
+
+### Interactive Mode
+
+For a guided experience:
+
+```bash
+python tour_guide_interactive.py
 ```
 
 The script will ask:
@@ -94,8 +115,7 @@ See [INTERACTIVE_MODE.md](INTERACTIVE_MODE.md) for details.
 ### Run Pre-Made Demo
 
 ```bash
-# API key is automatically loaded from tour_guide/config.py
-python3 demo_technion_to_tau.py
+python demo_technion_to_tau.py
 ```
 
 ### Python API

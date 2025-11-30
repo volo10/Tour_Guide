@@ -108,7 +108,7 @@ class TestVideoAgentQueryBuilding:
 class TestVideoAgentSearch:
     """Tests for VideoAgent._search_youtube()."""
 
-    @patch('tour_guide.agent_orchestrator.agents.requests.get')
+    @patch('tour_guide.agent_orchestrator.video_agent.requests.get')
     def test_search_youtube_success(self, mock_get, tel_aviv_junction):
         """Test successful YouTube search."""
         mock_response = MagicMock()
@@ -137,7 +137,7 @@ class TestVideoAgentSearch:
         assert result.agent_type == AgentType.VIDEO
         assert "youtube.com" in result.url
 
-    @patch('tour_guide.agent_orchestrator.agents.requests.get')
+    @patch('tour_guide.agent_orchestrator.video_agent.requests.get')
     def test_search_youtube_no_results(self, mock_get, tel_aviv_junction):
         """Test YouTube search with no results."""
         mock_response = MagicMock()
@@ -155,7 +155,7 @@ class TestVideoAgentSearch:
 
         assert result is None
 
-    @patch('tour_guide.agent_orchestrator.agents.requests.get')
+    @patch('tour_guide.agent_orchestrator.video_agent.requests.get')
     def test_search_youtube_api_error(self, mock_get, tel_aviv_junction):
         """Test YouTube search with API error."""
         mock_get.side_effect = Exception("API Error")
@@ -206,10 +206,99 @@ class TestMusicAgentQueryBuilding:
         assert any("highway" in q.lower() or "Highway" in q for q in queries)
 
 
+class TestMusicAgentSpotifySearch:
+    """Tests for MusicAgent Spotify search."""
+
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.get')
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.post')
+    def test_search_spotify_success(self, mock_post, mock_get, tel_aviv_junction):
+        """Test successful Spotify search."""
+        # Mock token response
+        mock_token_response = MagicMock()
+        mock_token_response.status_code = 200
+        mock_token_response.json.return_value = {
+            "access_token": "test_token",
+            "expires_in": 3600
+        }
+        mock_post.return_value = mock_token_response
+
+        # Mock search response
+        mock_search_response = MagicMock()
+        mock_search_response.status_code = 200
+        mock_search_response.json.return_value = {
+            "tracks": {
+                "items": [{
+                    "name": "Tel Aviv Song",
+                    "artists": [{"name": "Test Artist"}],
+                    "album": {"name": "Test Album"},
+                    "external_urls": {"spotify": "https://open.spotify.com/track/123"},
+                    "popularity": 75
+                }]
+            }
+        }
+        mock_get.return_value = mock_search_response
+
+        agent = MusicAgent()
+        agent.initialize(client_id="test_id", client_secret="test_secret")
+        result = agent.process(tel_aviv_junction)
+
+        assert result is not None
+        assert result.agent_type == AgentType.MUSIC
+
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.get')
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.post')
+    def test_search_spotify_no_results(self, mock_post, mock_get, tel_aviv_junction):
+        """Test Spotify search with no results."""
+        # Mock token response
+        mock_token_response = MagicMock()
+        mock_token_response.status_code = 200
+        mock_token_response.json.return_value = {
+            "access_token": "test_token",
+            "expires_in": 3600
+        }
+        mock_post.return_value = mock_token_response
+
+        # Mock empty search response
+        mock_search_response = MagicMock()
+        mock_search_response.status_code = 200
+        mock_search_response.json.return_value = {"tracks": {"items": []}}
+        mock_get.return_value = mock_search_response
+
+        agent = MusicAgent()
+        agent.initialize(client_id="test_id", client_secret="test_secret")
+        result = agent.process(tel_aviv_junction)
+
+        # Result should be returned (may have error or be empty)
+        assert result is not None
+
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.get')
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.post')
+    def test_search_spotify_api_error(self, mock_post, mock_get, tel_aviv_junction):
+        """Test Spotify search with API error."""
+        # Mock token response
+        mock_token_response = MagicMock()
+        mock_token_response.status_code = 200
+        mock_token_response.json.return_value = {
+            "access_token": "test_token",
+            "expires_in": 3600
+        }
+        mock_post.return_value = mock_token_response
+
+        # Mock API error
+        mock_get.side_effect = Exception("API Error")
+
+        agent = MusicAgent()
+        agent.initialize(client_id="test_id", client_secret="test_secret")
+        result = agent.process(tel_aviv_junction)
+
+        assert result is not None
+        # Should handle error gracefully
+
+
 class TestMusicAgentSpotifyAuth:
     """Tests for MusicAgent Spotify authentication."""
 
-    @patch('tour_guide.agent_orchestrator.agents.requests.post')
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.post')
     def test_get_spotify_token_success(self, mock_post):
         """Test successful Spotify token retrieval."""
         mock_response = MagicMock()
@@ -226,7 +315,7 @@ class TestMusicAgentSpotifyAuth:
 
         assert token == "test_token_123"
 
-    @patch('tour_guide.agent_orchestrator.agents.requests.post')
+    @patch('tour_guide.agent_orchestrator.music_agent.requests.post')
     def test_get_spotify_token_caching(self, mock_post):
         """Test that Spotify token is cached."""
         mock_response = MagicMock()

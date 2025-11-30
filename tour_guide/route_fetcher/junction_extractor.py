@@ -215,11 +215,8 @@ class JunctionExtractor:
         # Parse from instruction text
         instruction = step.get("html_instructions", "").lower()
 
-        if "turn left" in instruction or "left onto" in instruction:
-            return TurnDirection.LEFT
-        elif "turn right" in instruction or "right onto" in instruction:
-            return TurnDirection.RIGHT
-        elif "slight left" in instruction:
+        # Check specific turn types first (slight, sharp) before generic left/right
+        if "slight left" in instruction:
             return TurnDirection.SLIGHT_LEFT
         elif "slight right" in instruction:
             return TurnDirection.SLIGHT_RIGHT
@@ -227,6 +224,10 @@ class JunctionExtractor:
             return TurnDirection.SHARP_LEFT
         elif "sharp right" in instruction:
             return TurnDirection.SHARP_RIGHT
+        elif "turn left" in instruction or "left onto" in instruction:
+            return TurnDirection.LEFT
+        elif "turn right" in instruction or "right onto" in instruction:
+            return TurnDirection.RIGHT
         elif "u-turn" in instruction:
             return TurnDirection.U_TURN
         elif "merge" in instruction:

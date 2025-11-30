@@ -249,3 +249,49 @@ class TestFlaskAvailability:
         """Test FLASK_AVAILABLE flag is set correctly."""
         # Since we're running these tests, Flask must be available
         assert FLASK_AVAILABLE is True
+
+
+class TestPostTourWithInterval:
+    """Additional POST /tour tests."""
+
+    def test_post_tour_with_custom_interval(self, app):
+        """Test POST with custom interval."""
+        with patch('tour_guide.user_api.tour_guide_api.TourGuideAPI.get_tour') as mock_get_tour:
+            mock_get_tour.return_value = TourGuideResult(
+                source="A",
+                destination="B",
+                total_distance="10 km",
+                total_duration="15 min",
+                success=True,
+            )
+
+            client = app.test_client()
+            response = client.post(
+                '/tour',
+                data=json.dumps({
+                    'source': 'A',
+                    'destination': 'B',
+                    'interval': 15.0
+                }),
+                content_type='application/json'
+            )
+            assert response.status_code == 200
+
+    def test_post_tour_minimal_body(self, app):
+        """Test POST with minimal required fields."""
+        with patch('tour_guide.user_api.tour_guide_api.TourGuideAPI.get_tour') as mock_get_tour:
+            mock_get_tour.return_value = TourGuideResult(
+                source="X",
+                destination="Y",
+                total_distance="",
+                total_duration="",
+                success=True,
+            )
+
+            client = app.test_client()
+            response = client.post(
+                '/tour',
+                data=json.dumps({'source': 'X', 'destination': 'Y'}),
+                content_type='application/json'
+            )
+            assert response.status_code == 200

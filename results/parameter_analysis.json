@@ -1,0 +1,94 @@
+{
+  "experiment_date": "2024-11-30",
+  "experiment_version": "1.0",
+  "interval_experiments": [
+    {
+      "interval": 1.0,
+      "total_time": 12.0,
+      "success_rate": 0.85,
+      "video_wins": 3,
+      "music_wins": 4,
+      "history_wins": 3
+    },
+    {
+      "interval": 2.0,
+      "total_time": 22.0,
+      "success_rate": 0.85,
+      "video_wins": 4,
+      "music_wins": 3,
+      "history_wins": 3
+    },
+    {
+      "interval": 5.0,
+      "total_time": 52.0,
+      "success_rate": 0.95,
+      "video_wins": 3,
+      "music_wins": 3,
+      "history_wins": 4
+    },
+    {
+      "interval": 10.0,
+      "total_time": 102.0,
+      "success_rate": 0.95,
+      "video_wins": 4,
+      "music_wins": 2,
+      "history_wins": 4
+    },
+    {
+      "interval": 30.0,
+      "total_time": 302.0,
+      "success_rate": 0.95,
+      "video_wins": 5,
+      "music_wins": 2,
+      "history_wins": 3
+    }
+  ],
+  "timeout_experiments": [
+    {
+      "timeout": 5.0,
+      "success_rate": 0.7,
+      "avg_score": 65,
+      "failed_agents": 9,
+      "avg_response_time": 4.0
+    },
+    {
+      "timeout": 10.0,
+      "success_rate": 0.85,
+      "avg_score": 75,
+      "failed_agents": 4,
+      "avg_response_time": 8.0
+    },
+    {
+      "timeout": 15.0,
+      "success_rate": 0.85,
+      "avg_score": 75,
+      "failed_agents": 4,
+      "avg_response_time": 8.0
+    },
+    {
+      "timeout": 30.0,
+      "success_rate": 0.95,
+      "avg_score": 85,
+      "failed_agents": 1,
+      "avg_response_time": 8.0
+    }
+  ],
+  "recommendations": {
+    "junction_interval": 5.0,
+    "agent_timeout": 30.0,
+    "reasoning": "Balance between processing speed and reliability"
+  },
+  "statistical_summary": {
+    "processing_time": {
+      "min": 12.0,
+      "max": 302.0,
+      "mean": 98.0,
+      "std_dev": 110.5
+    },
+    "success_rate": {
+      "min": 0.7,
+      "max": 0.95,
+      "mean": 0.84
+    }
+  }
+}

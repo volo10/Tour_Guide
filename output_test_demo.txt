@@ -1,0 +1,100 @@
+python run_demo.py "Tel Aviv" "Jerusalem"
+============================================================
+  TOUR GUIDE DEMO
+============================================================
+
+[1/4] Loading environment variables...
+      .env file loaded
+
+[2/4] Checking API keys...
+      All API keys found!
+
+[3/4] Running tour...
+      From: Tel Aviv
+      To:   Jerusalem
+
+
+🚗 Processing route: Tel Aviv → Jerusalem
+⏱️  Tempo: 2.0s per junction
+----------------------------------------
+  🎬 Junction 1: Shlomo Ibn Gabirol St., Tel Aviv. Night Walk
+  🎬 Junction 2: Rokah Avenue - Tel Aviv - Israel
+  🎬 Junction 3: Rokah Avenue - Tel Aviv - Israel
+  🎵 Junction 4: The Boxer - Simon & Garfunkel
+  🎬 Junction 5: Ha-Banim Garden in Rokach Blvd
+[JID-6] history agent timed out
+[JID-6] video agent timed out
+[JID-6] music agent timed out
+[JID-6] No agent results to evaluate
+[JID-6] No winner selected
+  🎬 Junction 7: Highway Ayalon at night Tel Aviv Israel 2020 כביש איילון בלילה תל אביב ישראל
+  🎬 Junction 8: כביש 1 מזרוחה לכביש 431 Highway 1 East, Israel to
+  🎵 Junction 9: Route 66 - Chuck Berry
+[JID-10] history agent timed out
+  🎵 Junction 10: Route 66 - Chuck Berry
+[JID-11] history agent timed out
+[JID-11] video agent timed out
+[JID-11] music agent timed out
+[JID-11] No agent results to evaluate
+[JID-11] No winner selected
+[JID-12] history agent timed out
+[JID-12] video agent timed out
+[JID-12] music agent timed out
+[JID-12] No agent results to evaluate
+[JID-12] No winner selected
+  🎵 Junction 13: Route 66 - Chuck Berry
+  🎵 Junction 14: Route 66 - Chuck Berry
+  🎵 Junction 15: Street Life - Randy Crawford
+  🎬 Junction 16: Israeli Soldier Recites Quran! 😳 #shorts
+  🎬 Junction 17: האי היווני: אריאל וגלעד שרון חשודים בשחיתות | מבט לאחור 28.03.18
+  🎵 Junction 18: Street Life - Randy Crawford
+  🎬 Junction 19: Jerusalem 4K • Driving in Israel  🇮🇱
+  🎬 Junction 20: R&#39; Shneur Zalman of Liadi - Prayer
+[JID-21] history agent timed out
+[JID-21] video agent timed out
+[JID-21] music agent timed out
+[JID-21] No agent results to evaluate
+[JID-21] No winner selected
+[JID-22] history agent timed out
+  🎬 Junction 22: דירה למכירה ברחביה ברחוב ארלוזורוב 4
+[JID-23] video agent timed out
+[JID-23] music agent timed out
+  📖 Junction 23: History of Tel Aviv
+  🎬 Junction 24: Keren Hayesod Leadership mission to Ethiopia and Israel 2023
+  🎬 Junction 25: Dershowitz: Sharon &#39;A George Washington-like Figure&#39; to Israel
+[JID-26] history agent timed out
+[JID-26] video agent timed out
+[JID-26] music agent timed out
+[JID-26] No agent results to evaluate
+[JID-26] No winner selected
+[JID-27] history agent timed out
+[JID-27] video agent timed out
+[JID-27] music agent timed out
+[JID-27] No agent results to evaluate
+[JID-27] No winner selected
+  🎵 Junction 28: Destination Calabria - Radio Edit - Alex Gaudino, Crystal Waters
+
+[4/4] Results
+============================================================
+  Status:     SUCCESS
+  Distance:   N/A
+  Duration:   N/A
+  Junctions:  28
+
+  Winner Distribution:
+    Video:   13 wins
+    Music:   8 wins
+    History: 1 wins
+
+  Processing Time: 56.7 seconds
+
+  Top Recommendations:
+    1. [video  ] Shlomo Ibn Gabirol St., Tel Aviv. Night Walk...
+    2. [video  ] Rokah Avenue - Tel Aviv - Israel...
+    3. [video  ] Rokah Avenue - Tel Aviv - Israel...
+
+============================================================
+  Demo complete!
+============================================================
+
+C:\D\Code\Multiple_Agents_With_LLMs\Tour_Guide>
